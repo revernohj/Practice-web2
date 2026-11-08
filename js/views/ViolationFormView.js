@@ -17,6 +17,67 @@ export default class ViolationFormView extends View {
     super('#violation-form-container');
   }
 
+  addHandlerIdentifierFormatting() {
+    if (!this._parentElement) return;
+
+    this._parentElement.addEventListener('input', (e) => {
+      const licenseInput = e.target.closest('#input-license-no');
+      if (licenseInput) {
+        const clean = licenseInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^[^A-Z]+/, '');
+        const first = clean.charAt(0).replace(/[^A-Z]/g, '');
+        const digits = clean.slice(first ? 1 : 0).replace(/\D/g, '').slice(0, 10);
+        const parts = [
+          `${first}${digits.slice(0, 2)}`,
+          digits.slice(2, 4),
+          digits.slice(4, 10)
+        ].filter(Boolean);
+        licenseInput.value = parts.join('-');
+        return;
+      }
+
+      const plateInput = e.target.closest('#input-plate-no');
+      if (plateInput) {
+        const clean = plateInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const digitIndex = clean.search(/\d/);
+
+        if (digitIndex > 0) {
+          const letters = clean.slice(0, digitIndex).replace(/[^A-Z]/g, '').slice(0, 3);
+          const digits = clean.slice(digitIndex).replace(/\D/g, '').slice(0, 5);
+          plateInput.value = digits ? `${letters} ${digits}` : letters;
+        } else if (/^\d/.test(clean)) {
+          const match = clean.match(/^(\d{0,4})([A-Z]{0,2})/);
+          plateInput.value = match?.[2] ? `${match[1]} ${match[2]}` : (match?.[1] || '');
+        } else {
+          plateInput.value = clean.replace(/[^A-Z]/g, '').slice(0, 3);
+        }
+      }
+    });
+  }
+
+  addHandlerPresetClick(handler) {
+    if (!this._parentElement) return;
+    this._parentElement.addEventListener('click', (e) => {
+      const button = e.target.closest('.offense-preset');
+      if (!button) return;
+      const select = this._parentElement.querySelector('#select-violation-type');
+      if (select) select.value = button.dataset.name;
+      handler(button.dataset.name);
+    });
+  }
+
+  addHandlerDemeritLookup(handler) {
+    if (!this._parentElement) return;
+    this._parentElement.addEventListener('input', (e) => {
+      const input = e.target.closest('#input-license-no');
+      if (input) handler(input.value);
+    });
+  }
+
+  updateDemerits(demerits) {
+    const value = this._parentElement?.querySelector('#license-demerit-value');
+    if (value) value.textContent = `${demerits.points} points · ${demerits.recentCount} active citation(s)`;
+  }
+
   /**
    * Attaches submit event listener to the violation form.
    * Extracts input values into a plain object and passes to controller.
@@ -102,6 +163,16 @@ export default class ViolationFormView extends View {
     }
   }
 
+  updatePreset(preset, calculation) {
+    const code = this._parentElement?.querySelector('#preset-code-value');
+    const description = this._parentElement?.querySelector('#preset-description-value');
+    const select = this._parentElement?.querySelector('#select-violation-type');
+    if (select && preset) select.value = preset.name;
+    if (code) code.textContent = preset?.code || '—';
+    if (description) description.textContent = preset?.description || '';
+    this.updateLiveFine(calculation);
+  }
+
   /**
    * Resets form fields and sets default date to today.
    */
@@ -126,6 +197,8 @@ export default class ViolationFormView extends View {
     const violation = this._data?.editingViolation || {};
     const violationTypes = this._data?.violationTypes || [];
     const calculation = this._data?.calculation || { baseFine: 0, surcharge: 0, total: 0 };
+    const presets = this._data?.presets || [];
+    const shiftSummary = this._data?.shiftSummary || { ticketsToday: 0, totalFines: 0, recentSubmissions: [] };
     const todayStr = new Date().toISOString().slice(0, 10);
 
     const title = isEditing ? 'Edit LTO Violation Record' : 'Issue Traffic Violation';
@@ -148,11 +221,43 @@ export default class ViolationFormView extends View {
           ` : ''}
         </div>
 
+        <div class="summary-grid shift-summary-grid" role="region" aria-label="Officer shift summary">
+          <div class="summary-card">
+            <div class="summary-icon blue">🎫</div>
+            <div class="summary-info">
+              <span class="summary-num">${shiftSummary.ticketsToday}</span>
+              <span class="summary-label">Tickets Issued Today</span>
+            </div>
+          </div>
+          <div class="summary-card highlight-card">
+            <div class="summary-icon gold">₱</div>
+            <div class="summary-info">
+              <span class="summary-num">${this._formatCurrency(shiftSummary.totalFines)}</span>
+              <span class="summary-label">Total Fines Assessed</span>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon green">↗</div>
+            <div class="summary-info">
+              <span class="summary-num">${shiftSummary.recentSubmissions.length}</span>
+              <span class="summary-label">Recent Submissions</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Dedicated Validation Error Banner Slot -->
         <div class="view-error-slot" aria-live="polite"></div>
         <div class="view-message-slot" aria-live="polite"></div>
 
         <form id="traffic-violation-form" class="violation-form" novalidate>
+          <div class="offense-preset-row" aria-label="Quick offense presets">
+            <span class="filter-label">Quick Select:</span>
+            ${presets.map(preset => `
+              <button type="button" class="filter-pill offense-preset" data-name="${this._escapeHtml(preset.name)}">
+                ${this._escapeHtml(preset.label)} · ₱${preset.baseFine.toLocaleString()}
+              </button>
+            `).join('')}
+          </div>
           <div class="form-grid">
 
             <!-- Driver's License Number -->
@@ -169,8 +274,11 @@ export default class ViolationFormView extends View {
                 value="${this._escapeHtml(violation.licenseNo || '')}"
                 required
                 autocomplete="off"
+                maxlength="13"
+                pattern="[A-Z]\\d{2}-\\d{2}-\\d{6}"
               />
               <span class="field-hint">Format: 1 letter, 2 digits, hyphen, 2 digits, hyphen, 6 digits</span>
+              <span id="license-demerit-value" class="field-hint license-demerit-indicator">0 points · lookup license for demerit total</span>
             </div>
 
             <!-- Vehicle Plate Number -->
@@ -187,6 +295,8 @@ export default class ViolationFormView extends View {
                 value="${this._escapeHtml(violation.plateNo || '')}"
                 required
                 autocomplete="off"
+                maxlength="9"
+                pattern="([A-Z]{3}[ -]?\\d{3,4}|[A-Z]{2}[ -]?\\d{4,5}|\\d{4}[ -]?[A-Z]{2})"
               />
               <span class="field-hint">Standard Philippine plate or MV file number</span>
             </div>
@@ -242,6 +352,17 @@ export default class ViolationFormView extends View {
               </select>
             </div>
 
+            <div class="form-group full-width preset-detail-row">
+              <div>
+                <span class="form-label">Violation Code</span>
+                <strong id="preset-code-value" class="code-val">—</strong>
+              </div>
+              <div>
+                <span class="form-label">Preset Description</span>
+                <span id="preset-description-value" class="field-hint">Select a quick preset to populate offense details.</span>
+              </div>
+            </div>
+
             <!-- Apprehension Location -->
             <div class="form-group full-width">
               <label for="input-location" class="form-label">
@@ -279,7 +400,7 @@ export default class ViolationFormView extends View {
                 <span id="live-total-fine" class="fine-val total-val">${this._formatCurrency(calculation.total)}</span>
               </div>
             </div>
-            <p class="fine-footnote">Amounts automatically update as the violation type is changed. Academic demo data only.</p>
+            <p class="fine-footnote">Amounts automatically update when the violation type is changed.</p>
           </div>
 
           <!-- Form Action Buttons -->

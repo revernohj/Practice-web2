@@ -3,7 +3,6 @@
  * AuthView.js
  * View component for User Authentication: Login & Registration.
  * Supports Driver, Traffic Enforcer, and Administrator roles with
- * dynamic role-specific registration fields and 1-click demo evaluation accounts.
  * Extends base View.
  */
 
@@ -184,22 +183,6 @@ export default class AuthView extends View {
     });
   }
 
-  /**
-   * Attaches handler for 1-click Quick Demo logins.
-   * @param {Function} handler
-   */
-  addHandlerQuickDemo(handler) {
-    if (!this._parentElement) return;
-
-    this._parentElement.addEventListener('click', (e) => {
-      const demoBtn = e.target.closest('[data-demo-user]');
-      if (!demoBtn) return;
-      const demoRole = demoBtn.dataset.demoUser;
-      if (demoRole) {
-        handler(demoRole);
-      }
-    });
-  }
 
   /**
    * Generates markup for the Auth Modal.
@@ -227,12 +210,6 @@ export default class AuthView extends View {
               <h2 id="auth-modal-title" class="auth-title">PORTAL AUTHENTICATION</h2>
               <span class="auth-system">Driver Violation Tracking &amp; Fine Settlement System</span>
             </div>
-          </div>
-
-          <!-- Academic Prototype Badge -->
-          <div class="auth-academic-tag">
-            <span class="tag-pill">ACADEMIC PROTOTYPE</span>
-            <span>Client-side persistent auth &middot; Multi-role simulation</span>
           </div>
 
           <!-- Main Tab Switcher: Sign In vs Register -->
@@ -264,9 +241,9 @@ export default class AuthView extends View {
 
           ${isLogin ? this._generateLoginMarkup() : this._generateRegisterMarkup(role)}
 
-          <!-- Footer Academic Note -->
+          <!-- Footer Notice -->
           <div class="auth-footer-notice">
-            <p>Authorized access only &middot; Philippine Land Transportation Office Simulation</p>
+            <p>Authorized access only &middot; Land Transportation Office Portal</p>
           </div>
         </div>
       </div>
@@ -274,7 +251,6 @@ export default class AuthView extends View {
   }
 
   /**
-   * Generates Login Form markup with 1-click Quick Demo evaluation accounts.
    */
   _generateLoginMarkup() {
     return `

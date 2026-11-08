@@ -13,6 +13,34 @@ export default class AdminEditModalView extends View {
     super('#admin-edit-modal-container');
   }
 
+  addHandlerIdentifierFormatting() {
+    if (!this._parentElement) return;
+    this._parentElement.addEventListener('input', (e) => {
+      const license = e.target.closest('#admin-edit-license');
+      if (license) {
+        const clean = license.value.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^[^A-Z]+/, '');
+        const first = clean.charAt(0).replace(/[^A-Z]/g, '');
+        const digits = clean.slice(first ? 1 : 0).replace(/\D/g, '').slice(0, 10);
+        license.value = [`${first}${digits.slice(0, 2)}`, digits.slice(2, 4), digits.slice(4, 10)]
+          .filter(Boolean).join('-');
+        return;
+      }
+
+      const plate = e.target.closest('#admin-edit-plate');
+      if (plate) {
+        const clean = plate.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const digitIndex = clean.search(/\d/);
+        if (digitIndex > 0) {
+          const letters = clean.slice(0, digitIndex).replace(/[^A-Z]/g, '').slice(0, 3);
+          const digits = clean.slice(digitIndex).replace(/\D/g, '').slice(0, 5);
+          plate.value = digits ? `${letters} ${digits}` : letters;
+        } else {
+          plate.value = clean.replace(/[^A-Z]/g, '').slice(0, 3);
+        }
+      }
+    });
+  }
+
   /**
    * Attaches handler for saving edited violation record.
    * @param {Function} handler
@@ -164,6 +192,8 @@ export default class AdminEditModalView extends View {
                     value="${this._escapeHtml(violation.licenseNo || '')}"
                     placeholder="e.g. N01-23-456789"
                     required
+                    maxlength="13"
+                    pattern="[A-Z]\\d{2}-\\d{2}-\\d{6}"
                   />
                 </div>
               </div>
@@ -183,6 +213,7 @@ export default class AdminEditModalView extends View {
                     value="${this._escapeHtml(violation.plateNo || '')}"
                     placeholder="e.g. ABC 1234"
                     required
+                    maxlength="9"
                   />
                 </div>
               </div>

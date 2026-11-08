@@ -22,7 +22,9 @@ import {
   PLATE_REGEX,
   VIOLATION_TYPES,
   INITIAL_SEED_VIOLATIONS,
-  INITIAL_SEED_PAYMENTS
+  INITIAL_SEED_PAYMENTS,
+  STORAGE_KEY_ACTIVITY,
+  STORAGE_KEY_DISPUTES
 } from './config.js';
 
 // ==========================================
@@ -53,6 +55,14 @@ export const state = {
 
   // History of completed Payment Transactions
   payments: [],
+  disputes: [],
+  activityLog: [],
+  selectedViolationIds: [],
+  offensePresets: [],
+  driverFilters: {
+    status: 'all',
+    date: ''
+  },
 
   // Administrator filter and search parameters
   filter: {
@@ -71,6 +81,7 @@ export const state = {
 
   // Violation currently selected by the driver for payment
   selectedViolationId: null,
+  disputeViolationId: null,
 
   // Live payment computation state (amount tendered vs total fine)
   paymentDraft: {
@@ -79,10 +90,17 @@ export const state = {
     remainingBalance: 0,
     isSufficient: false
   },
+  paymentMethod: 'credit-card',
 
   // Most recent Payment Transaction receipt to display
   lastReceipt: null
 };
+
+state.offensePresets = [
+  { label: 'No Helmet', code: 'SBL-04', name: 'Failure to Wear Prescribed Seatbelt / Helmet', baseFine: 1000, surchargeRate: 0.05, demeritPoints: 2 },
+  { label: 'Expired Registration', code: 'ORV-06', name: 'Operating an Unregistered Motor Vehicle', baseFine: 5000, surchargeRate: 0.20, demeritPoints: 5 },
+  { label: 'Disregarding Traffic Signs', code: 'DTS-01', name: 'Disregarding Traffic Signs (DTS)', baseFine: 1000, surchargeRate: 0.10, demeritPoints: 3 }
+];
 
 
 // ==========================================
@@ -121,7 +139,7 @@ export function calculateChange(amountDue, amountTendered) {
       amountTendered: tendered,
       changeDue: Math.round((tendered - due) * 100) / 100,
       remainingBalance: 0,
-      isSufficient: due > 0 && tendered >= due
+      isSufficient: tendered > 0 && due > 0
     };
   } else {
     return {
@@ -129,9 +147,17 @@ export function calculateChange(amountDue, amountTendered) {
       amountTendered: tendered,
       changeDue: 0,
       remainingBalance: Math.round((due - tendered) * 100) / 100,
-      isSufficient: false
+      isSufficient: tendered > 0 && due > 0
     };
   }
+}
+
+export function getViolationBalance(violation) {
+  if (!violation) return 0;
+  const totalDue = (Number(violation.fine) || 0) + (Number(violation.surcharge) || 0);
+  if (violation.status === 'paid') return 0;
+  const paidAmount = Math.max(0, Number(violation.paidAmount) || 0);
+  return Math.max(0, Math.round((totalDue - paidAmount) * 100) / 100);
 }
 
 /**
@@ -146,8 +172,8 @@ export function getOutstandingBalance(violations, licenseNo) {
   const cleanLicense = licenseNo.trim().toUpperCase();
 
   return violations
-    .filter(v => v.licenseNo.toUpperCase() === cleanLicense && v.status === 'unpaid')
-    .reduce((sum, v) => sum + (Number(v.fine) || 0) + (Number(v.surcharge) || 0), 0);
+    .filter(v => v.licenseNo.toUpperCase() === cleanLicense && v.status !== 'paid')
+    .reduce((sum, v) => sum + getViolationBalance(v), 0);
 }
 
 /**
@@ -383,6 +409,8 @@ export function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY_VIOLATIONS, JSON.stringify(state.violations));
     localStorage.setItem(STORAGE_KEY_PAYMENTS, JSON.stringify(state.payments));
+    localStorage.setItem(STORAGE_KEY_DISPUTES, JSON.stringify(state.disputes));
+    localStorage.setItem(STORAGE_KEY_ACTIVITY, JSON.stringify(state.activityLog));
     if (state.role) {
       localStorage.setItem(STORAGE_KEY_ROLE, state.role);
     } else {
@@ -406,6 +434,18 @@ export function saveState() {
   }
 }
 
+export function addActivity(message, type = 'status') {
+  state.activityLog.unshift({
+    id: `ACT-${Date.now()}`,
+    message: String(message),
+    type,
+    actor: state.currentUser ? state.currentUser.fullName : 'System',
+    timestamp: new Date().toISOString()
+  });
+  state.activityLog = state.activityLog.slice(0, 50);
+  saveState();
+}
+
 /**
  * Initializes state from localStorage, or loads default seeds if first run.
  * Ensures user must authenticate through the login page to access any role panel.
@@ -415,6 +455,8 @@ export function loadState() {
     const savedViolations = localStorage.getItem(STORAGE_KEY_VIOLATIONS);
     const savedPayments = localStorage.getItem(STORAGE_KEY_PAYMENTS);
     const savedUsers = localStorage.getItem(STORAGE_KEY_USERS);
+    const savedDisputes = localStorage.getItem(STORAGE_KEY_DISPUTES);
+    const savedActivity = localStorage.getItem(STORAGE_KEY_ACTIVITY);
     const savedCurrentUser = localStorage.getItem(STORAGE_KEY_CURRENT_USER)
       || sessionStorage.getItem(STORAGE_KEY_CURRENT_USER);
     persistSession = Boolean(localStorage.getItem(STORAGE_KEY_CURRENT_USER));
@@ -431,6 +473,9 @@ export function loadState() {
     } else {
       state.payments = [...INITIAL_SEED_PAYMENTS];
     }
+
+    state.disputes = savedDisputes ? JSON.parse(savedDisputes) : [];
+    state.activityLog = savedActivity ? JSON.parse(savedActivity) : [];
 
     // Load registered user accounts (or defaults)
     if (savedUsers) {
@@ -568,6 +613,7 @@ export function logout() {
     remainingBalance: 0,
     isSufficient: false
   };
+  state.paymentMethod = 'credit-card';
   saveState();
 }
 
@@ -655,6 +701,7 @@ export function addViolation(rawData) {
 
   // Add to top of list
   state.violations.unshift(newViolation);
+  addActivity(`Ticket #${newViolation.id} issued by Officer`, 'issue');
   saveState();
   return newViolation;
 }
@@ -691,6 +738,7 @@ export function updateViolation(id, updateData) {
   };
 
   state.editingViolationId = null;
+  addActivity(`Ticket #${id} edited by ${state.currentUser?.role === 'admin' ? 'Administrator' : 'Officer'}`, 'edit');
   saveState();
   return state.violations[index];
 }
@@ -703,6 +751,7 @@ export function updateViolation(id, updateData) {
  */
 export function deleteViolation(id) {
   const initialLength = state.violations.length;
+  const deleted = state.violations.find(v => v.id === id);
   state.violations = state.violations.filter(v => v.id !== id);
 
   if (state.editingViolationId === id) {
@@ -712,6 +761,9 @@ export function deleteViolation(id) {
     state.selectedViolationId = null;
   }
 
+  if (deleted && state.violations.length < initialLength) {
+    addActivity(`Ticket #${id} deleted by Administrator`, 'delete');
+  }
   saveState();
   return state.violations.length < initialLength;
 }
@@ -761,6 +813,107 @@ export function getFilteredViolations() {
   });
 }
 
+export function setDriverFilter(filterOptions) {
+  if (filterOptions.status !== undefined) state.driverFilters.status = filterOptions.status;
+  if (filterOptions.date !== undefined) state.driverFilters.date = filterOptions.date;
+}
+
+export function getFilteredDriverViolations() {
+  const violations = getDriverViolations();
+  return violations.filter(v => {
+    const statusMatch = state.driverFilters.status === 'all' ||
+      (state.driverFilters.status === 'pending_review'
+        ? v.status === 'pending_review'
+        : v.status === state.driverFilters.status);
+    const dateMatch = !state.driverFilters.date || v.date === state.driverFilters.date;
+    return statusMatch && dateMatch;
+  });
+}
+
+export function setDisputeViolation(id) {
+  state.disputeViolationId = id;
+}
+
+export function submitDispute(violationId, reason, notes = '') {
+  const violation = state.violations.find(v => v.id === violationId);
+  if (!violation) throw new Error('Citation record was not found.');
+  if (violation.status !== 'unpaid') throw new Error('Only unpaid citations can be contested.');
+
+  violation.status = 'pending_review';
+  state.disputes.unshift({
+    id: `DSP-${Date.now()}`,
+    violationId,
+    licenseNo: violation.licenseNo,
+    reason: String(reason).trim(),
+    notes: String(notes).trim(),
+    submittedAt: new Date().toISOString(),
+    status: 'pending_review'
+  });
+  addActivity(`Ticket #${violationId} contested by ${violation.driverName}`, 'dispute');
+  saveState();
+  return state.disputes[0];
+}
+
+export function getDemeritPoints(licenseNo) {
+  const cleanLicense = String(licenseNo || '').trim().toUpperCase();
+  if (!cleanLicense) return { points: 0, recentCount: 0 };
+
+  const violations = state.violations.filter(v =>
+    v.licenseNo.toUpperCase() === cleanLicense && v.status !== 'paid'
+  );
+  const points = violations.reduce((total, violation) => {
+    const preset = state.offensePresets.find(p => p.name === violation.type);
+    return total + (preset?.demeritPoints || 1);
+  }, 0);
+  return { points, recentCount: violations.length };
+}
+
+export function getShiftSummary() {
+  const today = new Date().toISOString().slice(0, 10);
+  const todayViolations = state.violations.filter(v => v.date === today);
+  const totalFines = todayViolations.reduce((sum, v) => sum + (Number(v.fine) || 0) + (Number(v.surcharge) || 0), 0);
+  return {
+    ticketsToday: todayViolations.length,
+    totalFines,
+    recentSubmissions: state.violations.slice(0, 3)
+  };
+}
+
+export function getExecutiveMetrics() {
+  const summary = getSummary(state.violations);
+  const counts = {};
+  state.violations.forEach(v => {
+    counts[v.type] = (counts[v.type] || 0) + 1;
+  });
+  const topOffense = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None';
+  return {
+    revenueSettled: summary.totalPaidFines,
+    activeViolations: state.violations.filter(v => v.status !== 'paid').length,
+    topOffense
+  };
+}
+
+export function setSelectedViolationIds(ids) {
+  state.selectedViolationIds = Array.isArray(ids) ? [...new Set(ids)] : [];
+}
+
+export function bulkSettleViolations(ids) {
+  let settledCount = 0;
+  ids.forEach(id => {
+    const violation = state.violations.find(v => v.id === id);
+    if (violation && violation.status !== 'paid') {
+      violation.status = 'paid';
+      settledCount += 1;
+    }
+  });
+  if (settledCount > 0) {
+    addActivity(`${settledCount} selected ticket${settledCount === 1 ? '' : 's'} marked as Paid`, 'settlement');
+    state.selectedViolationIds = [];
+    saveState();
+  }
+  return settledCount;
+}
+
 /**
  * Driver search by license number.
  * Member 3 (Driver logic)
@@ -791,6 +944,7 @@ export function getDriverViolations() {
  */
 export function selectViolationForPayment(violationId) {
   state.selectedViolationId = violationId;
+  state.paymentMethod = 'credit-card';
   state.paymentDraft = {
     amountTendered: 0,
     changeDue: 0,
@@ -809,8 +963,13 @@ export function updatePaymentDraft(amountTendered) {
   const selected = state.violations.find(v => v.id === state.selectedViolationId);
   if (!selected) return;
 
-  const totalDue = (Number(selected.fine) || 0) + (Number(selected.surcharge) || 0);
+  const totalDue = getViolationBalance(selected);
   state.paymentDraft = calculateChange(totalDue, amountTendered);
+}
+
+export function updatePaymentMethod(paymentMethod) {
+  const allowedMethods = ['credit-card', 'gcash', 'paymaya', 'qrph'];
+  state.paymentMethod = allowedMethods.includes(paymentMethod) ? paymentMethod : 'credit-card';
 }
 
 /**
@@ -826,17 +985,29 @@ export function recordPayment(amountTendered) {
     throw new Error('No violation selected for payment.');
   }
 
-  const totalDue = (Number(violation.fine) || 0) + (Number(violation.surcharge) || 0);
+  const totalDue = getViolationBalance(violation);
   const tendered = Number(amountTendered) || 0;
 
-  if (tendered < totalDue) {
-    throw new Error(`Amount tendered (₱${tendered.toFixed(2)}) is less than total fine and penalty due (₱${totalDue.toFixed(2)}).`);
+  if (tendered <= 0) {
+    throw new Error('Enter an amount greater than ₱0.00.');
+  }
+  if (tendered > totalDue) {
+    // Keep overpayments as change while settling only the citation balance.
+    amountTendered = totalDue;
   }
 
-  const change = Math.round((tendered - totalDue) * 100) / 100;
+  const appliedAmount = Math.min(tendered, totalDue);
+  const change = Math.max(0, Math.round((tendered - totalDue) * 100) / 100);
+  const previousPaidAmount = Math.max(0, Number(violation.paidAmount) || 0);
+  const newPaidAmount = previousPaidAmount + appliedAmount;
+  const remainingBalance = Math.max(0, Math.round((totalDue - appliedAmount) * 100) / 100);
+  violation.paidAmount = Math.round(newPaidAmount * 100) / 100;
 
-  // Mark violation as paid
-  violation.status = 'paid';
+  if (remainingBalance === 0) {
+    violation.status = 'paid';
+  } else {
+    violation.status = 'unpaid';
+  }
 
   // Format current date and time
   const now = new Date();
@@ -853,9 +1024,12 @@ export function recordPayment(amountTendered) {
     id: paymentId,
     violationId: violation.id,
     refNo,
-    amount: totalDue,
+    paymentMethod: state.paymentMethod,
+    amount: appliedAmount,
     tendered,
     change,
+    remainingBalance,
+    isPartial: remainingBalance > 0,
     paidAt: formattedDateTime,
     driverName: violation.driverName,
     licenseNo: violation.licenseNo,
@@ -872,6 +1046,7 @@ export function recordPayment(amountTendered) {
   state.lastReceipt = paymentRecord;
   state.selectedViolationId = null;
 
+  addActivity(`Ticket #${violation.id} marked as Paid`, 'payment');
   saveState();
   return paymentRecord;
 }
@@ -898,5 +1073,10 @@ export function resetDemoData() {
   state.lastReceipt = null;
   state.driverSearch = { licenseNo: '', searched: false };
   state.filter = { status: 'all', query: '' };
+  state.driverFilters = { status: 'all', date: '' };
+  state.disputes = [];
+  state.activityLog = [];
+  state.selectedViolationIds = [];
+  state.paymentMethod = 'credit-card';
   saveState();
 }

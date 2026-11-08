@@ -105,6 +105,21 @@ export default class LoginView extends View {
   }
 
   /**
+   * Attaches handler for the password recovery control.
+   */
+  addHandlerForgotPassword(handler) {
+    if (!this._parentElement) return;
+
+    this._parentElement.addEventListener('click', (e) => {
+      const button = e.target.closest('.login-forgot-button');
+      if (!button) return;
+
+      const usernameInput = this._parentElement.querySelector('#portal-login-username');
+      handler(usernameInput?.value || '');
+    });
+  }
+
+  /**
    * Attaches submission handler for the Login form.
    * @param {Function} handler
    */
@@ -118,6 +133,13 @@ export default class LoginView extends View {
 
       const usernameInput = form.querySelector('#portal-login-username');
       const passwordInput = form.querySelector('#portal-login-password');
+      const rememberInput = form.querySelector('#login-remember');
+
+      if (rememberInput?.checked) {
+        localStorage.setItem('lto_remembered_username', usernameInput ? usernameInput.value : '');
+      } else {
+        localStorage.removeItem('lto_remembered_username');
+      }
 
       handler({
         username: usernameInput ? usernameInput.value : '',
@@ -166,22 +188,6 @@ export default class LoginView extends View {
     });
   }
 
-  /**
-   * Attaches handler for 1-click Quick Demo logins.
-   * @param {Function} handler
-   */
-  addHandlerQuickDemo(handler) {
-    if (!this._parentElement) return;
-
-    this._parentElement.addEventListener('click', (e) => {
-      const demoBtn = e.target.closest('[data-demo-user]');
-      if (!demoBtn) return;
-      const demoRole = demoBtn.dataset.demoUser;
-      if (demoRole) {
-        handler(demoRole);
-      }
-    });
-  }
 
   /**
    * Generates markup for the In-Page Login & Access Control Portal.
@@ -190,28 +196,13 @@ export default class LoginView extends View {
     const isLogin = this._activeTab === 'login';
     const role = this._selectedRole;
     const initialNotice = this._data?.initialNotice || '';
+    const cardClass = isLogin ? 'login-compact-card' : 'login-compact-card login-register-card';
 
     return `
-      <section class="portal-card login-portal-card" aria-labelledby="login-portal-title">
-        <!-- Top Agency Header -->
-        <div class="login-portal-header">
-          <div class="login-brand-group">
-            <img src="img/lto-logo.png" alt="LTO Seal" class="login-brand-logo" width="60" height="60" />
-            <div class="login-brand-titles">
-              <span class="login-republic">REPUBLIC OF THE PHILIPPINES &middot; LAND TRANSPORTATION OFFICE</span>
-              <h2 id="login-portal-title" class="login-portal-title">OFFICIAL PORTAL ACCESS CONTROL</h2>
-              <p class="login-portal-desc">
-                Secure Authentication Gateway &mdash; You must sign in through this page to access your authorized system panel.
-              </p>
-            </div>
-          </div>
-          <div class="login-security-badge">
-            <span class="badge-icon">🔒</span>
-            <div class="badge-text-wrap">
-              <span class="badge-title">ROLE ACCESS CONTROL</span>
-              <span class="badge-sub">Admin &middot; Officer &middot; Driver Isolation</span>
-            </div>
-          </div>
+      <section class="portal-card login-portal-card ${cardClass}" aria-labelledby="login-portal-title">
+        <div class="login-glass-header">
+          <h2 id="login-portal-title" class="login-glass-title">${isLogin ? 'Login' : 'Register'}</h2>
+          <a href="#home" class="login-close-btn" aria-label="Close login">×</a>
         </div>
 
         <!-- System Alert Slot (for access warnings or validation results) -->
@@ -224,124 +215,62 @@ export default class LoginView extends View {
           ` : ''}
         </div>
 
-        <!-- Main Tab Switcher: Sign In vs Register -->
-        <div class="auth-tab-switch" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            class="auth-tab-btn ${isLogin ? 'active' : ''}"
-            data-login-tab="login"
-            aria-selected="${isLogin}"
-          >
-            <span class="tab-icon">🔑</span>
-            <span>Sign In to Portal</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            class="auth-tab-btn ${!isLogin ? 'active' : ''}"
-            data-login-tab="register"
-            aria-selected="${!isLogin}"
-          >
-            <span class="tab-icon">📝</span>
-            <span>Register New Account</span>
-          </button>
+        <div class="login-register-switch">
+          <button type="button" class="login-switch-link ${isLogin ? 'active' : ''}" data-login-tab="login">Login</button>
+          <button type="button" class="login-switch-link ${!isLogin ? 'active' : ''}" data-login-tab="register">Register</button>
         </div>
-
-        <!-- Tab Body -->
         ${isLogin ? this._generateLoginMarkup() : this._generateRegisterMarkup(role)}
-
-        <!-- Footer Notice -->
-        <div class="auth-footer-notice">
-          <p>
-            Republic of the Philippines &middot; Land Transportation Office &middot; Role-Based Access Control System
-          </p>
-        </div>
       </section>
     `;
   }
 
   /**
-   * Generates Sign In Form Markup with 1-click Quick Demo evaluation accounts.
    */
   _generateLoginMarkup() {
+    const rememberedUsername = localStorage.getItem('lto_remembered_username') || '';
+    const rememberChecked = rememberedUsername ? 'checked' : '';
+
     return `
       <form id="form-login-portal" class="auth-form" novalidate>
-        <div class="auth-grid-2">
-          <div class="auth-form-group">
-            <label for="portal-login-username" class="auth-label">
-              <span>Username or Account ID</span>
-              <span class="req">*</span>
-            </label>
-            <div class="auth-input-wrap">
-              <span class="input-icon">👤</span>
-              <input
-                type="text"
-                id="portal-login-username"
-                name="username"
-                class="auth-input"
-                placeholder="e.g. admin, enforcer, driver, or maria"
-                autocomplete="username"
-                required
-              />
-            </div>
-          </div>
+        <div class="login-field-group">
+          <label for="portal-login-username" class="login-field-label">Email</label>
+          <input
+            type="text"
+            id="portal-login-username"
+            name="username"
+            class="auth-input login-glass-input"
+            placeholder="Enter your account ID"
+            value="${this._escapeHtml(rememberedUsername)}"
+            autocomplete="username"
+            required
+          />
+        </div>
 
-          <div class="auth-form-group">
-            <label for="portal-login-password" class="auth-label">
-              <span>Password</span>
-              <span class="req">*</span>
-            </label>
-            <div class="auth-input-wrap">
-              <span class="input-icon">🔒</span>
-              <input
-                type="password"
-                id="portal-login-password"
-                name="password"
-                class="auth-input"
-                placeholder="Default: password123"
-                autocomplete="current-password"
-                required
-              />
-            </div>
-          </div>
+        <div class="login-field-group">
+          <label for="portal-login-password" class="login-field-label">Password</label>
+          <input
+            type="password"
+            id="portal-login-password"
+            name="password"
+            class="auth-input login-glass-input"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+
+        <div class="login-options-row">
+          <label class="login-remember"><input id="login-remember" type="checkbox" ${rememberChecked} /> Remember me</label>
+          <button type="button" class="login-forgot-button">Forgot Password?</button>
         </div>
 
         <button type="submit" class="btn-auth-submit" id="btn-submit-portal-login">
-          <span class="btn-icon">⚡</span>
-          <span>SIGN IN &amp; OPEN DASHBOARD</span>
+          <span>Login</span>
         </button>
 
-        <!-- 1-Click Demo Evaluation Profiles -->
-        <div class="demo-eval-card">
-          <div class="demo-eval-header">
-            <span class="demo-kicker">1-CLICK QUICK DEMO EVALUATION</span>
-            <span class="demo-hint">Click any profile below to instantly log in and access the dashboard:</span>
-          </div>
-          <div class="demo-buttons-grid">
-            <button type="button" class="btn-demo-pill" data-demo-user="admin" title="Open Administrator Dashboard">
-              <span class="pill-icon">🛡️</span>
-              <span class="pill-text">
-                <strong>Administrator</strong>
-                <small>Dir. Arturo Santos</small>
-              </span>
-            </button>
-            <button type="button" class="btn-demo-pill" data-demo-user="enforcer" title="Open Officer Dashboard">
-              <span class="pill-icon">📋</span>
-              <span class="pill-text">
-                <strong>Traffic Officer</strong>
-                <small>Officer Rommel Cruz</small>
-              </span>
-            </button>
-            <button type="button" class="btn-demo-pill" data-demo-user="driver" title="Open Driver Dashboard">
-              <span class="pill-icon">🚗</span>
-              <span class="pill-text">
-                <strong>Registered Driver</strong>
-                <small>Juan Dela Cruz</small>
-              </span>
-            </button>
-          </div>
-        </div>
+        <button type="button" class="login-register-button" data-login-tab="register">
+          Don't have an account? <strong>Register</strong>
+        </button>
       </form>
     `;
   }

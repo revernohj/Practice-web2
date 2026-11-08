@@ -5,9 +5,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LTO Philippines – Driver Violation Tracking and Fine Payment System</title>
-  <meta name="description" content="LTO Driver Violation Tracking and Fine Payment Management System academic prototype for BSIT coursework." />
+  <meta name="description" content="LTO Driver Violation Tracking and Fine Payment Management System." />
   <meta property="og:title" content="LTO Philippines – Driver Violation Tracking and Fine Payment System" />
-  <meta property="og:description" content="LTO Driver Violation Tracking and Fine Payment Management System academic prototype." />
+  <meta property="og:description" content="Official Land Transportation Office violation tracking and fine payment portal." />
 
   <script>
     // Ensure window.fetch has both getter and setter for compatibility with browser extensions and environments
@@ -52,37 +52,13 @@
 </head>
 <body class="dark-automotive-theme" data-page="home">
 
-  <!-- Left Vertical Action Rail (Matching Yamaha Reference Social Rail) -->
-  <aside class="left-action-rail" data-home-section aria-label="Portal Navigation Shortcuts">
-    <a href="#login" class="rail-icon-btn rail-auth-highlight" id="rail-auth-btn" title="Sign In to Portal">
-      <span class="rail-icon">🔑</span>
-    </a>
-    <span class="rail-divider"></span>
-    <button type="button" class="rail-icon-btn" data-role-switch="admin" title="LTO Administrator Dashboard">
-      <span class="rail-icon">🛡️</span>
-    </button>
-    <button type="button" class="rail-icon-btn" data-role-switch="enforcer" title="LTO Traffic Officer">
-      <span class="rail-icon">📋</span>
-    </button>
-    <button type="button" class="rail-icon-btn" data-role-switch="driver" title="Registered Driver Portal">
-      <span class="rail-icon">🚗</span>
-    </button>
-    <span class="rail-divider"></span>
-    <button type="button" class="rail-icon-btn" data-role-switch="driver" title="Search Citation">
-      <span class="rail-icon">🔍</span>
-    </button>
-  </aside>
+  <!-- Contextual dashboard action rail (populated by RoleSwitchView) -->
+  <aside class="left-action-rail" aria-label="Portal Functions"></aside>
 
-  <!-- Top Persistent Academic Notice Banner -->
-  <aside class="academic-banner" data-home-section role="note" aria-label="Academic Prototype Notice">
-    <div class="banner-inner">
-      <span class="banner-badge">NOTICE</span>
-      <span class="banner-text">ACADEMIC PROTOTYPE – Not an officially authorized LTO platform. Fine amounts and citations are sample coursework data.</span>
-    </div>
-  </aside>
+  <!-- Left Vertical Action Rail (Matching Yamaha Reference Social Rail) -->
 
   <!-- Official Government Agency Header (Dark Automotive Style) -->
-  <header class="lto-header" data-home-section role="banner">
+  <header class="lto-header" role="banner">
     <div class="header-container">
       <div class="header-left">
         <button type="button" class="btn-hamburger" id="btn-hamburger-toggle" aria-label="Menu">
@@ -116,7 +92,21 @@
         <button type="button" class="top-nav-link" data-role-switch="admin">ADMINISTRATOR</button>
         <button type="button" class="top-nav-link" data-role-switch="enforcer">ENFORCER TICKET</button>
         <button type="button" class="top-nav-link" data-role-switch="driver">DRIVER INQUIRY</button>
-        <a href="#main-content" class="top-nav-link">LEDGER</a>
+
+        <label class="theme-switch-control" title="Switch between day and night theme">
+          <input
+            type="checkbox"
+            id="theme-mode-toggle"
+            class="theme-switch-input"
+            role="switch"
+            aria-label="Enable night mode"
+          />
+          <span class="theme-switch-track" aria-hidden="true">
+            <span class="theme-switch-icon theme-switch-sun">☀</span>
+            <span class="theme-switch-thumb"></span>
+            <span class="theme-switch-icon theme-switch-moon">☾</span>
+          </span>
+        </label>
         
         <!-- User Session Indicator / Login Trigger -->
         <div class="header-session-group" id="header-user-session">
@@ -279,7 +269,7 @@
       </div>
     </section>
 
-    <section id="login-view-section" class="portal-section hidden" style="max-width:860px;margin:0 auto;">
+    <section id="login-view-section" class="portal-section hidden login-page-section">
       <div id="login-portal-container"></div>
     </section>
 
@@ -314,28 +304,28 @@
         <h3 class="footer-heading">LAND TRANSPORTATION OFFICE (LTO) – PHILIPPINES</h3>
         <p class="footer-text">
           East Avenue, Diliman, Quezon City, Metro Manila, Philippines.<br />
-          Driver Violation Tracking and Fine Payment System – Academic Prototype.
+          Driver Violation Tracking and Fine Payment System.
         </p>
       </div>
 
       <div class="footer-col">
-        <h4 class="footer-subheading">BSIT Coursework Team Ownership</h4>
+        <h4 class="footer-subheading">Portal Services</h4>
         <ul class="footer-team-list">
-          <li><strong>Member 1:</strong> Enforcer Module &middot; Form &amp; Citations</li>
-          <li><strong>Member 2:</strong> Admin Module &middot; Violation Management &amp; Audit</li>
-          <li><strong>Member 3:</strong> Driver Module &middot; Balance Inquiries &amp; Payment</li>
+          <li>Traffic Violation Issuance &amp; Citations</li>
+          <li>Violation Management &amp; Audit Records</li>
+          <li>Driver Balance Inquiries &amp; Payments</li>
         </ul>
       </div>
 
       <div class="footer-col footer-disclaimer" id="contact">
-        <h4 class="footer-subheading">System Architecture</h4>
+        <h4 class="footer-subheading">Office Information</h4>
         <p class="footer-text">
-          Vanilla JavaScript ES Modules &middot; Pure Model-View-Controller (MVC) Pattern &middot; Client-Side LocalStorage Persistence &middot; Zero Backend Dependencies.
+          Road safety enforcement, license and vehicle records, and traffic violation settlement services.
         </p>
       </div>
     </div>
     <div class="footer-bottom">
-      <p>&copy; 2026 Academic Class Project &middot; For Educational Evaluation Only.</p>
+      <p>&copy; 2026 Land Transportation Office. All rights reserved.</p>
     </div>
   </footer>
 

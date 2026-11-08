@@ -17,6 +17,124 @@ export default class RoleSwitchView extends View {
     super('#role-switch-container');
   }
 
+  renderRail(route = 'home', user = null) {
+    const rail = document.querySelector('.left-action-rail');
+    if (!rail) return;
+
+    const actions = {
+      admin: [
+        ['search', '🔍', 'Search Records'],
+        ['ledger', '📊', 'Violation Ledger'],
+        ['pending', '◷', 'Pending Review'],
+        ['export', '⬇', 'Export Selected']
+      ],
+      enforcer: [
+        ['issue', '＋', 'New Citation'],
+        ['presets', '⚡', 'Offense Presets'],
+        ['demerit', '•', 'Demerit Lookup'],
+        ['reset', '↺', 'Clear Form']
+      ],
+      driver: [
+        ['search', '🔍', 'Search License'],
+        ['balance', '₱', 'View Balance'],
+        ['pay', '💳', 'Pay Fine'],
+        ['history', '📋', 'Violation History'],
+        ['clearance', '✓', 'Clearance / Print']
+      ],
+      home: [
+        ['login', '🔑', 'Sign In'],
+        ['inquiry', '🔍', 'Driver Inquiry'],
+        ['citation', '📋', 'Issue Citation'],
+        ['records', '🛡️', 'Manage Records']
+      ],
+      login: [
+        ['login', '🔑', 'Sign In'],
+        ['inquiry', '🔍', 'Driver Inquiry'],
+        ['citation', '📋', 'Issue Citation'],
+        ['records', '🛡️', 'Manage Records']
+      ]
+    };
+
+    const currentActions = actions[route] || actions.home;
+    rail.setAttribute('aria-label', route === 'home' || route === 'login'
+      ? 'Portal Functions'
+      : `${route} dashboard functions`);
+    rail.innerHTML = currentActions.map(([action, icon, label]) => `
+      <button type="button" class="rail-icon-btn" data-dashboard-action="${action}" aria-label="${label}" title="${label}">
+        <span class="rail-icon">${icon}</span>
+        <span class="rail-label">${label}</span>
+      </button>
+    `).join('');
+
+    rail.querySelectorAll('.rail-icon-btn').forEach((button, index) => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      button.animate([
+        { opacity: 0, transform: 'translateX(-10px) scale(0.72)' },
+        { opacity: 1, transform: 'translateX(3px) scale(1.08)', offset: 0.72 },
+        { transform: 'translateX(0) scale(1)', offset: 1 }
+      ], {
+        duration: 480,
+        delay: index * 55,
+        easing: 'cubic-bezier(.34, 1.56, .64, 1)',
+        fill: 'both'
+      });
+    });
+  }
+
+  syncHeader(role = 'home', user = null) {
+    const roleMap = {
+      admin: 'admin',
+      enforcer: 'enforcer',
+      driver: 'driver'
+    };
+
+    document.querySelectorAll('.top-nav-link[data-role-switch]').forEach((button) => {
+      const buttonRole = button.dataset.roleSwitch;
+      const isAuthorized = Boolean(user && user.role === buttonRole);
+      button.hidden = Boolean(user && !isAuthorized);
+      button.classList.toggle('role-nav-hidden', Boolean(user && !isAuthorized));
+      button.classList.toggle('active', roleMap[role] === buttonRole && isAuthorized);
+    });
+
+    document.querySelectorAll('[data-role-switch]').forEach((button) => {
+      button.classList.toggle('active', roleMap[role] === button.dataset.roleSwitch);
+    });
+
+    document.querySelectorAll('.top-nav-link[data-role-switch]').forEach((button, index) => {
+      if (!button.classList.contains('active') || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      button.animate([
+        { transform: 'scale(0.92, 1.08)' },
+        { transform: 'scale(1.07, 0.94)', offset: 0.55 },
+        { transform: 'scale(1)' }
+      ], {
+        duration: 420,
+        delay: index * 20,
+        easing: 'cubic-bezier(.34, 1.56, .64, 1)'
+      });
+    });
+  }
+
+  addHandlerRailAction(handler) {
+    const rail = document.querySelector('.left-action-rail');
+    if (!rail) return;
+    rail.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-dashboard-action]');
+      if (!button) return;
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        button.animate([
+          { transform: 'scale(1)' },
+          { transform: 'scale(1.18, 0.82)', offset: 0.32 },
+          { transform: 'scale(0.92, 1.12)', offset: 0.68 },
+          { transform: 'scale(1)' }
+        ], {
+          duration: 460,
+          easing: 'cubic-bezier(.34, 1.56, .64, 1)'
+        });
+      }
+      handler(button.dataset.dashboardAction);
+    });
+  }
+
   /**
    * Attaches click listener to role buttons and notifies the controller.
    * @param {Function} handler - Callback function receiving selected role

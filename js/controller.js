@@ -27,6 +27,7 @@ import AuthView from './views/AuthView.js';
 import UserSessionView from './views/UserSessionView.js';
 import LoginView from './views/LoginView.js';
 import AdminEditModalView from './views/AdminEditModalView.js';
+import ThemeView from './views/ThemeView.js';
 
 // Instantiate view singletons
 const roleSwitchView = new RoleSwitchView();
@@ -39,6 +40,7 @@ const authView = new AuthView();
 const userSessionView = new UserSessionView();
 const loginView = new LoginView();
 const adminEditModalView = new AdminEditModalView();
+new ThemeView();
 
 
 // ==========================================
@@ -75,7 +77,7 @@ function formatPanelName(role) {
  */
 function getRoute() {
   const route = window.location.hash.replace(/^#/, '').split('?')[0].toLowerCase();
-  return ['login', 'admin', 'enforcer', 'driver'].includes(route) ? route : 'home';
+  return ['login', 'admin', 'enforcer', 'driver'].includes(route) ? route : 'login';
 }
 
 /**
@@ -241,6 +243,58 @@ function updateHeroMetrics() {
   }
 }
 
+function executeDashboardRailAction(action) {
+  const route = getRoute();
+
+  const focusAndScroll = (selector) => {
+    const element = document.querySelector(selector);
+    if (!element) return;
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (typeof element.focus === 'function') element.focus({ preventScroll: true });
+  };
+
+  if (route === 'admin') {
+    if (action === 'search') focusAndScroll('#admin-search-input');
+    if (action === 'ledger') focusAndScroll('#mgmt-heading');
+    if (action === 'pending') document.querySelector('.filter-pill[data-status="pending_review"]')?.click();
+    if (action === 'export') document.querySelector('#btn-export-selected:not(:disabled)')?.click();
+    return;
+  }
+
+  if (route === 'enforcer') {
+    if (action === 'issue') focusAndScroll('#input-license-no');
+    if (action === 'presets') focusAndScroll('.offense-preset-row');
+    if (action === 'demerit') focusAndScroll('#input-license-no');
+    if (action === 'reset') document.querySelector('#btn-reset-form')?.click();
+    return;
+  }
+
+  if (route === 'driver') {
+    if (action === 'search') focusAndScroll('#input-driver-search-license');
+    if (action === 'balance') focusAndScroll('.balance-highlight-box');
+    if (action === 'pay') {
+      const payButton = document.querySelector('.btn-pay-violation:not([disabled])');
+      if (payButton) {
+        payButton.click();
+      } else {
+        focusAndScroll('.history-section');
+      }
+    }
+    if (action === 'history') focusAndScroll('.history-section');
+    if (action === 'clearance') {
+      const printButton = document.querySelector('#btn-print-clearance');
+      if (printButton) printButton.click();
+      else focusAndScroll('.clearance-status-row');
+    }
+    return;
+  }
+
+  if (action === 'login') showLoginPage('', 'driver');
+  if (action === 'inquiry') controlSwitchRole('driver');
+  if (action === 'citation') controlSwitchRole('enforcer');
+  if (action === 'records') controlSwitchRole('admin');
+}
+
 /**
  * Updates top navigation and left vertical rail highlights according to active user role.
  */
@@ -290,7 +344,9 @@ function renderEnforcerFormView() {
   violationFormView.render({
     editingViolation,
     violationTypes: VIOLATION_TYPES,
-    calculation
+    calculation,
+    presets: model.state.offensePresets,
+    shiftSummary: model.getShiftSummary()
   });
 }
 
@@ -305,6 +361,27 @@ function controlLiveFineCompute(typeName) {
 
   const calculation = model.calculateFineAndPenalty(typeConfig.baseFine, typeConfig.surchargeRate);
   violationFormView.updateLiveFine(calculation);
+}
+
+function controlPresetSelect(typeName) {
+  const preset = model.state.offensePresets.find(p => p.name === typeName);
+  const typeConfig = VIOLATION_TYPES.find(t => t.name === typeName) || preset;
+  if (!typeConfig) return;
+  const calculation = model.calculateFineAndPenalty(
+    typeConfig.baseFine,
+    typeConfig.surchargeRate || 0
+  );
+  violationFormView.updatePreset({
+    code: preset?.code || typeConfig.code || '—',
+    name: typeName,
+    description: preset?.name === typeName
+      ? VIOLATION_TYPES.find(t => t.name === typeName)?.description || ''
+      : typeConfig.description || ''
+  }, calculation);
+}
+
+function controlDemeritLookup(licenseNo) {
+  violationFormView.updateDemerits(model.getDemeritPoints(licenseNo));
 }
 
 /**
@@ -365,7 +442,11 @@ function renderAdminViews() {
     violations: filteredViolations,
     summary,
     currentStatus: model.state.filter.status,
-    searchQuery: model.state.filter.query
+    searchQuery: model.state.filter.query,
+    executiveMetrics: model.getExecutiveMetrics(),
+    activityLog: model.state.activityLog,
+    selectedCount: model.state.selectedViolationIds.length,
+    pendingReviewCount: model.state.violations.filter(v => v.status === 'pending_review').length
   });
 }
 
@@ -389,6 +470,23 @@ function controlSearchViolations(query) {
   if (!model.state.currentUser || model.state.currentUser.role !== 'admin') return;
   model.setFilter({ query });
   renderAdminViews();
+}
+
+function controlViolationSelection(ids) {
+  model.setSelectedViolationIds(ids);
+  renderAdminViews();
+}
+
+function controlBulkSettle() {
+  if (!model.state.currentUser || model.state.currentUser.role !== 'admin') return;
+  const count = model.bulkSettleViolations(model.state.selectedViolationIds);
+  renderAdminViews();
+  violationListView.renderMessage(count > 0 ? `${count} selected citation(s) marked as Settled.` : 'No eligible citations selected.');
+}
+
+function controlExportSelected() {
+  const selected = model.state.violations.filter(v => model.state.selectedViolationIds.includes(v.id));
+  violationListView.exportCsv(selected);
 }
 
 /**
@@ -477,22 +575,6 @@ function controlDeleteViolation(violationId) {
   }
 }
 
-/**
- * Resets demo data back to initial seeds.
- * Member 2 (Admin utility)
- */
-function controlResetDemoData() {
-  if (!model.state.currentUser || model.state.currentUser.role !== 'admin') {
-    showAccessDenied('Only Administrators can reset system demo data.');
-    return;
-  }
-
-  model.resetDemoData();
-  renderAdminViews();
-  violationListView.renderMessage('Demo citations restored to default coursework state.');
-}
-
-
 // ==========================================
 // 4. MEMBER 3: REGISTERED DRIVER CONTROLS
 // ==========================================
@@ -504,11 +586,15 @@ function controlResetDemoData() {
 function renderDriverViews() {
   const violations = model.getDriverViolations();
   const outstandingBalance = model.getOutstandingBalance(model.state.violations, model.state.driverSearch.licenseNo);
+  const filteredViolations = model.getFilteredDriverViolations();
 
   // 1. Render Driver Balance & History
   driverBalanceView.render({
     driverSearch: model.state.driverSearch,
     violations,
+    filteredViolations,
+    driverFilters: model.state.driverFilters,
+    disputeViolationId: model.state.disputeViolationId,
     outstandingBalance
   });
 
@@ -549,6 +635,33 @@ function controlSearchDriver(licenseNo) {
   renderDriverViews();
 }
 
+function controlDriverFilter(status, date) {
+  model.setDriverFilter({ status, date });
+  renderDriverViews();
+}
+
+function controlContestViolation(violationId) {
+  model.setDisputeViolation(violationId);
+  renderDriverViews();
+}
+
+function controlSubmitDispute(payload) {
+  try {
+    model.submitDispute(payload.violationId, payload.reason, payload.notes);
+    model.setDisputeViolation(null);
+    renderDriverViews();
+    driverBalanceView.renderMessage('Your citation dispute was submitted for administrative review.');
+  } catch (err) {
+    model.setDisputeViolation(payload.violationId);
+    renderDriverViews();
+    driverBalanceView.renderError(err.message || 'Dispute submission failed.');
+  }
+}
+
+function controlPrintClearance() {
+  window.print();
+}
+
 /**
  * Opens payment view for a specific unpaid citation.
  * Member 3 (Driver payment selection)
@@ -572,6 +685,10 @@ function controlSelectPayment(violationId) {
 function controlPaymentInput(amountTendered) {
   model.updatePaymentDraft(amountTendered);
   paymentView.updateLiveComputation(model.state.paymentDraft);
+}
+
+function controlPaymentMethod(paymentMethod) {
+  model.updatePaymentMethod(paymentMethod);
 }
 
 /**
@@ -711,6 +828,18 @@ function controlLogin(credentials) {
 }
 
 /**
+ * Provides password recovery feedback from the login portal.
+ */
+function controlForgotPassword(username) {
+  if (!username.trim()) {
+    loginView.renderAuthError('Enter your email or username first, then request password recovery.');
+    return;
+  }
+
+  loginView.renderAuthSuccess('Password recovery instructions are available for registered accounts.');
+}
+
+/**
  * Handles new user registration for Driver, Enforcer, or Admin.
  * @param {Object} payload
  */
@@ -745,21 +874,6 @@ function controlLogout() {
   window.location.hash = 'login?notice=' + encodeURIComponent('You have been signed out successfully.');
 }
 
-/**
- * Handles 1-click Quick Demo logins for immediate grading and evaluation.
- * @param {string} demoRole
- */
-function controlQuickDemo(demoRole) {
-  const targetUser = model.state.users.find(u => u.username === demoRole || u.role === demoRole);
-  if (targetUser) {
-    controlLogin({
-      username: targetUser.username,
-      password: targetUser.password
-    });
-  }
-}
-
-
 // ==========================================
 // 6. APPLICATION INITIALIZATION
 // ==========================================
@@ -771,15 +885,20 @@ function controlQuickDemo(demoRole) {
 function init() {
   model.loadState();
 
+  const initialHash = window.location.hash.toLowerCase();
+  if (!initialHash || initialHash === '#home' || initialHash.startsWith('#home?')) {
+    window.location.replace('#login');
+  }
+
   userSessionView.addHandlerOpenAuth(controlOpenAuth);
   userSessionView.addHandlerSignOut(controlLogout);
   roleSwitchView.addHandlerRoleChange(controlSwitchRole);
+  roleSwitchView.addHandlerRailAction(executeDashboardRailAction);
   authView.addHandlerClose(controlCloseAuth);
   authView.addHandlerTabSwitch(controlSwitchAuthTab);
   authView.addHandlerRoleSelect(controlSelectAuthRole);
   authView.addHandlerLogin(controlLogin);
   authView.addHandlerRegister(controlRegister);
-  authView.addHandlerQuickDemo(controlQuickDemo);
 
   function routePortal() {
     const route = getRoute();
@@ -792,6 +911,8 @@ function init() {
     const homeSections = document.querySelectorAll('[data-home-section]');
 
     homeSections.forEach(section => section.classList.toggle('hidden', route !== 'home'));
+    roleSwitchView.renderRail(route, model.state.currentUser);
+    roleSwitchView.syncHeader(route, model.state.currentUser);
     if (loginSection) loginSection.classList.toggle('hidden', route !== 'login');
     if (adminSection) adminSection.classList.toggle('hidden', route !== 'admin');
     if (enforcerSection) enforcerSection.classList.toggle('hidden', route !== 'enforcer');
@@ -807,7 +928,7 @@ function init() {
       }
       loginView.addHandlerLogin(controlLogin);
       loginView.addHandlerRegister(controlRegister);
-      loginView.addHandlerQuickDemo(controlQuickDemo);
+      loginView.addHandlerForgotPassword(controlForgotPassword);
       loginView.addHandlerTabSwitch((tab, role) => loginView.render({ tab, role }));
       loginView.addHandlerRoleSelect((tab, role) => loginView.render({ tab, role }));
       loginView.render({
@@ -838,25 +959,35 @@ function init() {
         adminEditModalView.addHandlerSave(controlSaveAdminEdit);
         adminEditModalView.addHandlerLiveCompute(controlAdminEditLiveCompute);
         adminEditModalView.addHandlerCancel(controlCloseAdminEdit);
+        adminEditModalView.addHandlerIdentifierFormatting();
         violationListView.addHandlerFilter(controlFilterStatus);
         violationListView.addHandlerSearch(controlSearchViolations);
         violationListView.addHandlerEdit(controlOpenAdminEdit);
         violationListView.addHandlerDelete(controlDeleteViolation);
-        violationListView.addHandlerResetData(controlResetDemoData);
+        violationListView.addHandlerSelection(controlViolationSelection);
+        violationListView.addHandlerBatchActions(controlBulkSettle, controlExportSelected);
         renderAdminViews();
       } else if (route === 'enforcer') {
         violationFormView.addHandlerSubmit(controlSubmitViolation);
         violationFormView.addHandlerLiveCompute(controlLiveFineCompute);
         violationFormView.addHandlerCancelEdit(controlCancelEdit);
         violationFormView.addHandlerResetFields();
+        violationFormView.addHandlerPresetClick(controlPresetSelect);
+        violationFormView.addHandlerDemeritLookup(controlDemeritLookup);
+        violationFormView.addHandlerIdentifierFormatting();
         renderEnforcerFormView();
       } else {
         driverBalanceView.addHandlerSearch(controlSearchDriver);
-        driverBalanceView.addHandlerSampleClick(controlSearchDriver);
         driverBalanceView.addHandlerPayClick(controlSelectPayment);
+        driverBalanceView.addHandlerFilter(controlDriverFilter);
+        driverBalanceView.addHandlerContestClick(controlContestViolation);
+        driverBalanceView.addHandlerDisputeSubmit(controlSubmitDispute);
+        driverBalanceView.addHandlerPrintClearance(controlPrintClearance);
         paymentView.addHandlerTenderedInput(controlPaymentInput);
+        paymentView.addHandlerPaymentMethod(controlPaymentMethod);
         paymentView.addHandlerQuickCash(controlPaymentInput);
         paymentView.addHandlerSubmitPayment(controlPay);
+        paymentView.addHandlerSlideConfirm(controlPay);
         paymentView.addHandlerCancel(controlCancelPayment);
         receiptView.addHandlerClose(controlCloseReceipt);
         receiptView.addHandlerPrint();

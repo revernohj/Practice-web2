@@ -12,6 +12,8 @@ export const STORAGE_KEY_PAYMENTS = 'lto_prototype_payments_v1';
 export const STORAGE_KEY_ROLE = 'lto_prototype_role_v1';
 export const STORAGE_KEY_USERS = 'lto_prototype_users_v2';
 export const STORAGE_KEY_CURRENT_USER = 'lto_prototype_current_user_v2';
+export const STORAGE_KEY_ACTIVITY = 'lto_prototype_activity_v1';
+export const STORAGE_KEY_DISPUTES = 'lto_prototype_disputes_v1';
 
 // Administrative Verification Passcode required to register as LTO Administrator
 export const ADMIN_PASSCODE = 'LTO-ADMIN-2026';

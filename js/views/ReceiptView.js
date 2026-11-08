@@ -5,7 +5,6 @@
  * Displays after a payment transaction is successfully recorded.
  *
  * Mandatory requirement:
- * Labelled explicitly as "PROTOTYPE – NOT AN OFFICIAL RECEIPT".
  */
 
 import View from './View.js';
@@ -48,6 +47,14 @@ export default class ReceiptView extends View {
   _generateMarkup() {
     const receipt = this._data;
     if (!receipt) return '';
+    const paymentMethodLabels = {
+      'credit-card': 'Credit Card',
+      gcash: 'GCash',
+      paymaya: 'Maya',
+      qrph: 'QR Ph'
+    };
+    const paymentMethodLabel = paymentMethodLabels[receipt.paymentMethod] || 'LTO Payment Counter';
+    const amountTenderedLabel = receipt.paymentMethod === 'cash' ? 'Amount Tendered (Cash)' : 'Amount Paid';
 
     return `
       <div class="receipt-backdrop" role="dialog" aria-modal="true" aria-labelledby="receipt-title">
@@ -62,11 +69,6 @@ export default class ReceiptView extends View {
           </div>
 
           <div class="receipt-paper" id="printable-receipt">
-            <!-- Academic Prototype Mandatory Watermark / Notice -->
-            <div class="receipt-watermark-banner">
-              ⚠️ PROTOTYPE – NOT AN OFFICIAL RECEIPT ⚠️
-            </div>
-
             <div class="receipt-header">
               <div class="receipt-logo-wrap">
                 <img src="img/lto-logo.png" alt="LTO Seal" class="receipt-logo-img" width="72" height="72" />
@@ -95,7 +97,7 @@ export default class ReceiptView extends View {
               </div>
               <div class="receipt-meta-item">
                 <span class="meta-label">Payment Channel:</span>
-                <span class="meta-value">Academic Prototype Cashier</span>
+                <span class="meta-value">${this._escapeHtml(paymentMethodLabel)}</span>
               </div>
             </div>
 
@@ -137,26 +139,32 @@ export default class ReceiptView extends View {
                   <td class="text-right">${this._formatCurrency(receipt.surcharge)}</td>
                 </tr>
                 <tr class="receipt-total-row">
-                  <td><strong>Total Fine and Penalty Settled:</strong></td>
+                  <td><strong>${receipt.isPartial ? 'Amount Applied to Fine:' : 'Total Fine and Penalty Settled:'}</strong></td>
                   <td class="text-right bold-total">${this._formatCurrency(receipt.amount)}</td>
                 </tr>
                 <tr>
-                  <td>Amount Tendered (Cash):</td>
+                  <td>${amountTenderedLabel}:</td>
                   <td class="text-right">${this._formatCurrency(receipt.tendered)}</td>
                 </tr>
                 <tr>
                   <td>Change Dispensed:</td>
                   <td class="text-right">${this._formatCurrency(receipt.change)}</td>
                 </tr>
+                ${receipt.isPartial ? `
+                <tr>
+                  <td><strong>Remaining Balance:</strong></td>
+                  <td class="text-right"><strong>${this._formatCurrency(receipt.remainingBalance)}</strong></td>
+                </tr>
+                ` : ''}
               </tbody>
             </table>
 
             <div class="receipt-status-seal">
-              <span class="seal-badge">CLEARED &amp; PAID</span>
+              <span class="seal-badge">${receipt.isPartial ? 'PARTIAL PAYMENT' : 'CLEARED &amp; PAID'}</span>
             </div>
 
             <div class="receipt-footer">
-              <p>This document serves as an academic prototype receipt for coursework evaluation.</p>
+              <p>Keep this receipt as proof of payment for your traffic violation record.</p>
               <p>LAND TRANSPORTATION OFFICE (LTO) &ndash; PHILIPPINES</p>
             </div>
           </div>
