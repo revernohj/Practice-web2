@@ -49,7 +49,7 @@ export default class UserSessionView extends View {
 
     if (!user) {
       return `
-        <a href="login.html" class="btn-header-auth" id="btn-header-auth-trigger" title="Sign In to Portal">
+        <a href="#login" class="btn-header-auth" id="btn-header-auth-trigger" title="Sign In to Portal">
           <span class="auth-icon" aria-hidden="true">🔑</span>
           <span class="auth-label-wrap">
             <span class="auth-primary-text">LOGIN</span>
@@ -72,18 +72,19 @@ export default class UserSessionView extends View {
     };
 
     const dashboardUrls = {
-      admin: 'admin.html',
-      enforcer: 'officer.html',
-      driver: 'driver.html'
+      admin: '#admin',
+      enforcer: '#enforcer',
+      driver: '#driver'
     };
 
     const targetUrl = dashboardUrls[user.role] || 'index.html';
-    const currentPath = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '';
-    const isCurrentDashboard = (
-      (user.role === 'admin' && currentPath.endsWith('admin.html')) ||
-      (user.role === 'enforcer' && currentPath.endsWith('officer.html')) ||
-      (user.role === 'driver' && currentPath.endsWith('driver.html'))
-    );
+    const route = typeof window !== 'undefined'
+      ? window.location.hash.replace(/^#/, '').split('?')[0].toLowerCase()
+      : '';
+    const isCurrentDashboard =
+      (user.role === 'admin' && route === 'admin') ||
+      (user.role === 'enforcer' && route === 'enforcer') ||
+      (user.role === 'driver' && route === 'driver');
 
     let metaInfo = '';
     if (user.role === 'driver' && user.licenseNo) {

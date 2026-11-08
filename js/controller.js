@@ -70,6 +70,15 @@ function formatPanelName(role) {
 }
 
 /**
+ * Reads the hash-based route used by the single-page portal.
+ * @returns {'home'|'login'|'admin'|'enforcer'|'driver'}
+ */
+function getRoute() {
+  const route = window.location.hash.replace(/^#/, '').split('?')[0].toLowerCase();
+  return ['login', 'admin', 'enforcer', 'driver'].includes(route) ? route : 'home';
+}
+
+/**
  * Displays an access-denied notification banner when an unauthorized action is attempted.
  * @param {string} message
  */
@@ -114,10 +123,10 @@ function clearAccessAlert() {
  * @returns {string}
  */
 function getDashboardUrl(role) {
-  if (role === 'admin') return 'admin.html';
-  if (role === 'enforcer') return 'officer.html';
-  if (role === 'driver') return 'driver.html';
-  return 'index.html';
+  if (role === 'admin') return 'index.html#admin';
+  if (role === 'enforcer') return 'index.html#enforcer';
+  if (role === 'driver') return 'index.html#driver';
+  return 'index.html#home';
 }
 
 /**
@@ -126,10 +135,8 @@ function getDashboardUrl(role) {
  * @param {string} role
  */
 function showLoginPage(notice = '', role = 'driver') {
-  const url = new URL('login.html', window.location.href);
-  if (notice) url.searchParams.set('notice', notice);
-  if (role) url.searchParams.set('role', role);
-  window.location.assign(url.href);
+  const hash = `#login?notice=${encodeURIComponent(notice)}&role=${encodeURIComponent(role)}`;
+  window.location.hash = hash.slice(1);
 }
 
 /**
@@ -157,10 +164,10 @@ function controlSwitchRole(newRole) {
     return;
   }
 
-  // Check 3: Route to dashboard page if not already there
+  // Check 3: Route to the matching in-page dashboard
   const targetUrl = getDashboardUrl(newRole);
-  const currentFile = window.location.pathname.split('/').pop().toLowerCase();
-  if (currentFile !== targetUrl.toLowerCase()) {
+  const route = getRoute();
+  if (route !== newRole) {
     window.location.assign(targetUrl);
     return;
   }
@@ -735,7 +742,7 @@ function controlRegister(payload) {
  */
 function controlLogout() {
   model.logout();
-  window.location.assign('login.html?notice=' + encodeURIComponent('You have been signed out successfully.'));
+  window.location.hash = 'login?notice=' + encodeURIComponent('You have been signed out successfully.');
 }
 
 /**
@@ -762,137 +769,118 @@ function controlQuickDemo(demoRole) {
  * and initializes state and routing according to the active page.
  */
 function init() {
-  // 1. Load persisted data or default demo seeds
   model.loadState();
 
-  const currentPath = window.location.pathname.toLowerCase();
-  const isLoginPage = document.body.dataset.page === 'login' || currentPath.endsWith('login.html');
-  const dashboardRole = document.body.dataset.dashboard; // 'admin' | 'enforcer' | 'driver'
-
-  // ==========================================
-  // CASE A: DEDICATED LOGIN PAGE (login.html)
-  // ==========================================
-  if (isLoginPage) {
-    // If already authenticated, redirect directly to user's assigned dashboard
-    if (model.state.currentUser) {
-      window.location.replace(getDashboardUrl(model.state.currentUser.role));
-      return;
-    }
-
-    // Subscribe LoginView handlers
-    loginView.addHandlerLogin(controlLogin);
-    loginView.addHandlerRegister(controlRegister);
-    loginView.addHandlerQuickDemo(controlQuickDemo);
-    loginView.addHandlerTabSwitch((tab, role) => loginView.render({ tab, role }));
-    loginView.addHandlerRoleSelect((tab, role) => loginView.render({ tab, role }));
-
-    // Read URL query parameters (?notice=... & ?role=...)
-    const params = new URLSearchParams(window.location.search);
-    const notice = params.get('notice') || '';
-    const initialRole = params.get('role') || 'driver';
-
-    loginView.render({
-      tab: 'login',
-      role: initialRole,
-      initialNotice: notice
-    });
-    return;
-  }
-
-  // ==========================================
-  // CASE B: ROLE DASHBOARDS (admin.html, officer.html, driver.html)
-  // ==========================================
-  if (dashboardRole) {
-    // 1. Authentication check
-    if (!model.state.currentUser) {
-      const notice = `Authentication Required: Please sign in to access the ${formatPanelName(dashboardRole)}.`;
-      window.location.replace(`login.html?role=${dashboardRole}&notice=${encodeURIComponent(notice)}`);
-      return;
-    }
-
-    // 2. Strict RBAC check: role must match this dashboard
-    if (model.state.currentUser.role !== dashboardRole) {
-      const userRole = model.state.currentUser.role;
-      const notice = `Access Denied: As a ${formatRoleName(userRole)}, you are only authorized to access the ${formatPanelName(userRole)}.`;
-      window.location.replace(`login.html?role=${userRole}&notice=${encodeURIComponent(notice)}`);
-      return;
-    }
-
-    // 3. User is authorized for this dashboard
-    model.setRole(dashboardRole);
-
-    // Subscribe User Session View handlers
-    userSessionView.addHandlerOpenAuth(controlOpenAuth);
-    userSessionView.addHandlerSignOut(controlLogout);
-    renderUserSession();
-
-    // Subscribe Auth Modal View handlers (for account switching)
-    authView.addHandlerClose(controlCloseAuth);
-    authView.addHandlerTabSwitch(controlSwitchAuthTab);
-    authView.addHandlerRoleSelect(controlSelectAuthRole);
-    authView.addHandlerLogin(controlLogin);
-    authView.addHandlerRegister(controlRegister);
-    authView.addHandlerQuickDemo(controlQuickDemo);
-
-    if (dashboardRole === 'admin') {
-      adminEditModalView.addHandlerSave(controlSaveAdminEdit);
-      adminEditModalView.addHandlerLiveCompute(controlAdminEditLiveCompute);
-      adminEditModalView.addHandlerCancel(controlCloseAdminEdit);
-
-      violationListView.addHandlerFilter(controlFilterStatus);
-      violationListView.addHandlerSearch(controlSearchViolations);
-      violationListView.addHandlerEdit(controlOpenAdminEdit);
-      violationListView.addHandlerDelete(controlDeleteViolation);
-      violationListView.addHandlerResetData(controlResetDemoData);
-
-      renderAdminViews();
-    } else if (dashboardRole === 'enforcer') {
-      violationFormView.addHandlerSubmit(controlSubmitViolation);
-      violationFormView.addHandlerLiveCompute(controlLiveFineCompute);
-      violationFormView.addHandlerCancelEdit(controlCancelEdit);
-      violationFormView.addHandlerResetFields();
-
-      renderEnforcerFormView();
-    } else if (dashboardRole === 'driver') {
-      driverBalanceView.addHandlerSearch(controlSearchDriver);
-      driverBalanceView.addHandlerSampleClick(controlSearchDriver);
-      driverBalanceView.addHandlerPayClick(controlSelectPayment);
-
-      paymentView.addHandlerTenderedInput(controlPaymentInput);
-      paymentView.addHandlerQuickCash(controlPaymentInput);
-      paymentView.addHandlerSubmitPayment(controlPay);
-      paymentView.addHandlerCancel(controlCancelPayment);
-
-      receiptView.addHandlerClose(controlCloseReceipt);
-      receiptView.addHandlerPrint();
-
-      renderDriverViews();
-
-      if (model.state.currentUser.licenseNo) {
-        controlSearchDriver(model.state.currentUser.licenseNo);
-      }
-    }
-    return;
-  }
-
-  // ==========================================
-  // CASE C: PORTAL HOME / LANDING PAGE (index.html)
-  // ==========================================
-  // Subscribe User Session View handlers
   userSessionView.addHandlerOpenAuth(controlOpenAuth);
   userSessionView.addHandlerSignOut(controlLogout);
-  renderUserSession();
-
-  // Role switcher navigation
   roleSwitchView.addHandlerRoleChange(controlSwitchRole);
-  if (model.state.currentUser && model.state.role) {
-    roleSwitchView.render({ user: model.state.currentUser, role: model.state.role });
-  } else {
-    roleSwitchView.render({ user: null, role: null });
+  authView.addHandlerClose(controlCloseAuth);
+  authView.addHandlerTabSwitch(controlSwitchAuthTab);
+  authView.addHandlerRoleSelect(controlSelectAuthRole);
+  authView.addHandlerLogin(controlLogin);
+  authView.addHandlerRegister(controlRegister);
+  authView.addHandlerQuickDemo(controlQuickDemo);
+
+  function routePortal() {
+    const route = getRoute();
+    const hashParts = window.location.hash.replace(/^#/, '').split('?');
+    const params = new URLSearchParams(hashParts[1] || '');
+    const loginSection = document.querySelector('#login-view-section');
+    const adminSection = document.querySelector('#admin-view-section');
+    const enforcerSection = document.querySelector('#enforcer-view-section');
+    const driverSection = document.querySelector('#driver-view-section');
+    const homeSections = document.querySelectorAll('[data-home-section]');
+
+    homeSections.forEach(section => section.classList.toggle('hidden', route !== 'home'));
+    if (loginSection) loginSection.classList.toggle('hidden', route !== 'login');
+    if (adminSection) adminSection.classList.toggle('hidden', route !== 'admin');
+    if (enforcerSection) enforcerSection.classList.toggle('hidden', route !== 'enforcer');
+    if (driverSection) driverSection.classList.toggle('hidden', route !== 'driver');
+
+    renderUserSession();
+    clearAccessAlert();
+
+    if (route === 'login') {
+      if (model.state.currentUser) {
+        window.location.replace(getDashboardUrl(model.state.currentUser.role));
+        return;
+      }
+      loginView.addHandlerLogin(controlLogin);
+      loginView.addHandlerRegister(controlRegister);
+      loginView.addHandlerQuickDemo(controlQuickDemo);
+      loginView.addHandlerTabSwitch((tab, role) => loginView.render({ tab, role }));
+      loginView.addHandlerRoleSelect((tab, role) => loginView.render({ tab, role }));
+      loginView.render({
+        tab: 'login',
+        role: params.get('role') || 'driver',
+        initialNotice: params.get('notice') || ''
+      });
+      document.body.dataset.page = 'login';
+      return;
+    }
+
+    if (['admin', 'enforcer', 'driver'].includes(route)) {
+      if (!model.state.currentUser) {
+        const notice = `Authentication Required: Please sign in to access the ${formatPanelName(route)}.`;
+        window.location.hash = `login?role=${route}&notice=${encodeURIComponent(notice)}`;
+        return;
+      }
+      if (model.state.currentUser.role !== route) {
+        const notice = `Access Denied: As a ${formatRoleName(model.state.currentUser.role)}, you are only authorized to access the ${formatPanelName(model.state.currentUser.role)}.`;
+        window.location.hash = `login?role=${model.state.currentUser.role}&notice=${encodeURIComponent(notice)}`;
+        return;
+      }
+
+      model.setRole(route);
+      document.body.dataset.dashboard = route;
+
+      if (route === 'admin') {
+        adminEditModalView.addHandlerSave(controlSaveAdminEdit);
+        adminEditModalView.addHandlerLiveCompute(controlAdminEditLiveCompute);
+        adminEditModalView.addHandlerCancel(controlCloseAdminEdit);
+        violationListView.addHandlerFilter(controlFilterStatus);
+        violationListView.addHandlerSearch(controlSearchViolations);
+        violationListView.addHandlerEdit(controlOpenAdminEdit);
+        violationListView.addHandlerDelete(controlDeleteViolation);
+        violationListView.addHandlerResetData(controlResetDemoData);
+        renderAdminViews();
+      } else if (route === 'enforcer') {
+        violationFormView.addHandlerSubmit(controlSubmitViolation);
+        violationFormView.addHandlerLiveCompute(controlLiveFineCompute);
+        violationFormView.addHandlerCancelEdit(controlCancelEdit);
+        violationFormView.addHandlerResetFields();
+        renderEnforcerFormView();
+      } else {
+        driverBalanceView.addHandlerSearch(controlSearchDriver);
+        driverBalanceView.addHandlerSampleClick(controlSearchDriver);
+        driverBalanceView.addHandlerPayClick(controlSelectPayment);
+        paymentView.addHandlerTenderedInput(controlPaymentInput);
+        paymentView.addHandlerQuickCash(controlPaymentInput);
+        paymentView.addHandlerSubmitPayment(controlPay);
+        paymentView.addHandlerCancel(controlCancelPayment);
+        receiptView.addHandlerClose(controlCloseReceipt);
+        receiptView.addHandlerPrint();
+        renderDriverViews();
+        if (model.state.currentUser.licenseNo) {
+          controlSearchDriver(model.state.currentUser.licenseNo);
+        }
+      }
+      return;
+    }
+
+    delete document.body.dataset.dashboard;
+    delete document.body.dataset.page;
+    if (model.state.currentUser && model.state.role) {
+      roleSwitchView.render({ user: model.state.currentUser, role: model.state.role });
+    } else {
+      roleSwitchView.render({ user: null, role: null });
+    }
+    updateHeroMetrics();
+    updateNavIndicators();
   }
 
-  updateHeroMetrics();
-  updateNavIndicators();
+  window.addEventListener('hashchange', routePortal);
+  routePortal();
 
   // Left action rail buttons
   const railAuthBtn = document.querySelector('#rail-auth-btn');

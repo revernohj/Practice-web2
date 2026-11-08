@@ -52,7 +52,7 @@ export default class RoleSwitchView extends View {
               <span class="gate-lock-icon" aria-hidden="true">🔒</span>
               <div class="gate-text-group">
                 <span class="gate-title">SYSTEM PANELS SECURED &middot; AUTHENTICATION REQUIRED</span>
-                <span class="gate-desc">Sign in on the <a href="login.html" style="color: var(--accent-cyan-glow); font-weight: 700; text-decoration: underline;">login page</a> to access the Administrator, Officer, or Driver dashboard.</span>
+                <span class="gate-desc">Sign in through the <a href="#login" style="color: var(--accent-cyan-glow); font-weight: 700; text-decoration: underline;">portal login</a> to access the Administrator, Officer, or Driver dashboard.</span>
               </div>
             </div>
           </div>

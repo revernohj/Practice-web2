@@ -53,8 +53,8 @@
 <body class="dark-automotive-theme" data-page="home">
 
   <!-- Left Vertical Action Rail (Matching Yamaha Reference Social Rail) -->
-  <aside class="left-action-rail" aria-label="Portal Navigation Shortcuts">
-    <a href="login.html" class="rail-icon-btn rail-auth-highlight" id="rail-auth-btn" title="Sign In to Portal">
+  <aside class="left-action-rail" data-home-section aria-label="Portal Navigation Shortcuts">
+    <a href="#login" class="rail-icon-btn rail-auth-highlight" id="rail-auth-btn" title="Sign In to Portal">
       <span class="rail-icon">🔑</span>
     </a>
     <span class="rail-divider"></span>
@@ -74,7 +74,7 @@
   </aside>
 
   <!-- Top Persistent Academic Notice Banner -->
-  <aside class="academic-banner" role="note" aria-label="Academic Prototype Notice">
+  <aside class="academic-banner" data-home-section role="note" aria-label="Academic Prototype Notice">
     <div class="banner-inner">
       <span class="banner-badge">NOTICE</span>
       <span class="banner-text">ACADEMIC PROTOTYPE – Not an officially authorized LTO platform. Fine amounts and citations are sample coursework data.</span>
@@ -82,7 +82,7 @@
   </aside>
 
   <!-- Official Government Agency Header (Dark Automotive Style) -->
-  <header class="lto-header" role="banner">
+  <header class="lto-header" data-home-section role="banner">
     <div class="header-container">
       <div class="header-left">
         <button type="button" class="btn-hamburger" id="btn-hamburger-toggle" aria-label="Menu">
@@ -120,7 +120,7 @@
         
         <!-- User Session Indicator / Login Trigger -->
         <div class="header-session-group" id="header-user-session">
-          <a href="login.html" class="btn-header-auth" id="btn-header-auth-trigger" title="Sign In to Portal">
+          <a href="#login" class="btn-header-auth" id="btn-header-auth-trigger" title="Sign In to Portal">
             <span class="auth-icon">🔑</span>
             <span class="auth-text">LOGIN</span>
           </a>
@@ -135,7 +135,7 @@
   </header>
 
   <!-- Featured Motorcycle Hero Showcase (Inspired by Yamaha Aerox Layout) -->
-  <section class="hero-showcase" aria-label="LTO Enforcement Vehicle & System Showcase">
+  <section class="hero-showcase" data-home-section aria-label="LTO Enforcement Vehicle & System Showcase">
     <!-- Faint 2026 Background Watermark -->
     <div class="hero-watermark-bg" aria-hidden="true">2026</div>
 
@@ -176,7 +176,7 @@
           <button type="button" class="btn-hero-ghost" data-role-switch="enforcer">
             ISSUE CITATION
           </button>
-          <a href="login.html" class="btn-hero-auth" id="hero-auth-trigger" title="Open Portal Login">
+          <a href="#login" class="btn-hero-auth" id="hero-auth-trigger" title="Open Portal Login">
             LOGIN
           </a>
         </div>
@@ -214,7 +214,7 @@
   </section>
 
   <!-- Role Switcher Navigation Container (Mounted by RoleSwitchView) -->
-  <section id="role-switch-container" aria-label="Role Switcher Navigation"></section>
+  <section id="role-switch-container" data-home-section aria-label="Role Switcher Navigation"></section>
 
   <!-- Access Control Alert Notification Container -->
   <div id="portal-access-alert-container" class="access-alert-wrap" aria-live="assertive"></div>
@@ -222,7 +222,7 @@
   <!-- Main Application Content Area -->
   <main id="main-content" class="main-layout" role="main">
 
-    <section class="portal-card" aria-labelledby="portals-showcase-title">
+    <section class="portal-card" data-home-section aria-labelledby="portals-showcase-title">
       <div class="card-header-group">
         <span class="card-kicker">OFFICIAL SYSTEM PANELS</span>
         <h2 id="portals-showcase-title" class="card-title">LTO ROLE-BASED DASHBOARDS</h2>
@@ -279,6 +279,23 @@
       </div>
     </section>
 
+    <section id="login-view-section" class="portal-section hidden" style="max-width:860px;margin:0 auto;">
+      <div id="login-portal-container"></div>
+    </section>
+
+    <section id="admin-view-section" class="portal-section hidden">
+      <div id="violation-list-container"></div>
+    </section>
+
+    <section id="enforcer-view-section" class="portal-section hidden">
+      <div id="violation-form-container"></div>
+    </section>
+
+    <section id="driver-view-section" class="portal-section hidden">
+      <div id="driver-portal-container"></div>
+      <div id="payment-portal-container"></div>
+    </section>
+
   </main>
 
   <!-- Modal Container for User Authentication & Registration (Mounted by AuthView) -->
@@ -291,7 +308,7 @@
   <div id="receipt-modal-container" aria-live="assertive"></div>
 
   <!-- Government Footer (Dark Automotive Finish) -->
-  <footer class="lto-footer" id="about" role="contentinfo">
+  <footer class="lto-footer" data-home-section id="about" role="contentinfo">
     <div class="footer-container">
       <div class="footer-col">
         <h3 class="footer-heading">LAND TRANSPORTATION OFFICE (LTO) – PHILIPPINES</h3>
