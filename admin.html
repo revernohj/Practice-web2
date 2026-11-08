@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administrator Dashboard – LTO Philippines</title>
+  <meta name="description" content="Land Transportation Office Administrator Dashboard. Citation ledger, audit, and clearance." />
+  <link rel="icon" type="image/png" href="img/lto-logo.png" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="dark-automotive-theme" data-dashboard="admin">
+
+  <!-- Persistent Academic Notice Banner -->
+  <aside class="academic-banner" role="note" aria-label="Academic Prototype Notice">
+    <div class="banner-inner">
+      <span class="banner-badge">ADMINISTRATOR</span>
+      <span class="banner-text">Administrator dashboard. Master citation ledger, violation audit, and penalty clearance.</span>
+    </div>
+  </aside>
+
+  <!-- Official Government Agency Header -->
+  <header class="lto-header" role="banner">
+    <div class="header-container">
+      <div class="header-left">
+        <a href="index.html" class="header-brand" style="text-decoration: none; color: inherit;">
+          <div class="lto-logo-wrapper">
+            <img
+              src="img/lto-logo.png"
+              alt="Land Transportation Office Seal"
+              class="lto-logo-img"
+              width="48"
+              height="48"
+            />
+          </div>
+          <div class="header-text-group">
+            <div class="agency-republic">REPUBLIC OF THE PHILIPPINES</div>
+            <h1 class="agency-title">ADMINISTRATOR DASHBOARD</h1>
+            <p class="agency-system-name">Violation Ledger, Audit &amp; Clearance Records</p>
+          </div>
+        </a>
+      </div>
+
+      <nav class="top-nav-menu" aria-label="Dashboard Navigation">
+        <a href="index.html" class="top-nav-link">PORTAL HOME</a>
+        <div class="header-session-group" id="header-user-session"></div>
+        <div class="top-nav-locale">
+          <span>PHILIPPINES</span>
+          <span class="chevron">▾</span>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Access Control Alert Notification Container -->
+  <div id="portal-access-alert-container" class="access-alert-wrap" aria-live="assertive"></div>
+
+  <!-- Main Dashboard Content -->
+  <main id="main-content" class="main-layout" role="main">
+    <div id="admin-view-section" class="portal-section">
+      <div id="violation-list-container"></div>
+    </div>
+  </main>
+
+  <!-- Modal Container for Admin Editing a Citation Record -->
+  <div id="admin-edit-modal-container" aria-live="assertive"></div>
+
+  <!-- Modal Container for Authentication Switch -->
+  <div id="auth-modal-container" aria-live="assertive"></div>
+
+  <!-- Government Footer -->
+  <footer class="lto-footer" role="contentinfo">
+    <div class="footer-container">
+      <div class="footer-col">
+        <h3 class="footer-heading">LAND TRANSPORTATION OFFICE (LTO) – PHILIPPINES</h3>
+        <p class="footer-text">
+          East Avenue, Diliman, Quezon City, Metro Manila, Philippines.<br />
+          Official Administrator Citation &amp; Audit Portal.
+        </p>
+      </div>
+
+      <div class="footer-col">
+        <h4 class="footer-subheading">Administrator Responsibilities</h4>
+        <ul class="footer-team-list">
+          <li><strong>Audit Trail:</strong> Complete historical inspection of all traffic citations</li>
+          <li><strong>Citation Management:</strong> Update citation records and payment clearance statuses</li>
+          <li><strong>System Integrity:</strong> Zero-tolerance unauthorized role access isolation</li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-disclaimer">
+        <h4 class="footer-subheading">Authorized Access Only</h4>
+        <p class="footer-text">
+          Restricted to verified LTO administrative personnel with approved credentials.
+        </p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Land Transportation Office &middot; Administrator Dashboard &middot; Academic Prototype</p>
+    </div>
+  </footer>
+
+  <!-- Vanilla ES Module Controller Entrypoint -->
+  <script type="module" src="js/controller.js"></script>
+</body>
+</html>

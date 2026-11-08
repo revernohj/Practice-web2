@@ -1,0 +1,328 @@
+<!-- Owner: Shared (Members 1, 2, 3) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LTO Philippines – Driver Violation Tracking and Fine Payment System</title>
+  <meta name="description" content="LTO Driver Violation Tracking and Fine Payment Management System academic prototype for BSIT coursework." />
+  <meta property="og:title" content="LTO Philippines – Driver Violation Tracking and Fine Payment System" />
+  <meta property="og:description" content="LTO Driver Violation Tracking and Fine Payment Management System academic prototype." />
+
+  <script>
+    // Ensure window.fetch has both getter and setter for compatibility with browser extensions and environments
+    (function() {
+      try {
+        var _fetch = typeof window !== 'undefined' && window.fetch ? window.fetch.bind(window) : null;
+        Object.defineProperty(window, 'fetch', {
+          get: function() {
+            return _fetch;
+          },
+          set: function(fn) {
+            _fetch = fn;
+          },
+          configurable: true,
+          enumerable: true
+        });
+      } catch (err) {
+        try {
+          if (typeof Window !== 'undefined' && Window.prototype) {
+            var protoFetch = Window.prototype.fetch;
+            Object.defineProperty(Window.prototype, 'fetch', {
+              get: function() {
+                return _fetch || protoFetch;
+              },
+              set: function(fn) {
+                _fetch = fn;
+              },
+              configurable: true,
+              enumerable: true
+            });
+          }
+        } catch (_) {}
+      }
+    })();
+  </script>
+
+  <!-- Official LTO Favicon -->
+  <link rel="icon" type="image/png" href="img/lto-logo.png" />
+
+  <!-- Hand-written Custom CSS (No external frameworks needed) -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="dark-automotive-theme" data-page="home">
+
+  <!-- Left Vertical Action Rail (Matching Yamaha Reference Social Rail) -->
+  <aside class="left-action-rail" aria-label="Portal Navigation Shortcuts">
+    <a href="login.html" class="rail-icon-btn rail-auth-highlight" id="rail-auth-btn" title="Sign In to Portal">
+      <span class="rail-icon">🔑</span>
+    </a>
+    <span class="rail-divider"></span>
+    <button type="button" class="rail-icon-btn" data-role-switch="admin" title="LTO Administrator Dashboard">
+      <span class="rail-icon">🛡️</span>
+    </button>
+    <button type="button" class="rail-icon-btn" data-role-switch="enforcer" title="LTO Traffic Officer">
+      <span class="rail-icon">📋</span>
+    </button>
+    <button type="button" class="rail-icon-btn" data-role-switch="driver" title="Registered Driver Portal">
+      <span class="rail-icon">🚗</span>
+    </button>
+    <span class="rail-divider"></span>
+    <button type="button" class="rail-icon-btn" data-role-switch="driver" title="Search Citation">
+      <span class="rail-icon">🔍</span>
+    </button>
+  </aside>
+
+  <!-- Top Persistent Academic Notice Banner -->
+  <aside class="academic-banner" role="note" aria-label="Academic Prototype Notice">
+    <div class="banner-inner">
+      <span class="banner-badge">NOTICE</span>
+      <span class="banner-text">ACADEMIC PROTOTYPE – Not an officially authorized LTO platform. Fine amounts and citations are sample coursework data.</span>
+    </div>
+  </aside>
+
+  <!-- Official Government Agency Header (Dark Automotive Style) -->
+  <header class="lto-header" role="banner">
+    <div class="header-container">
+      <div class="header-left">
+        <button type="button" class="btn-hamburger" id="btn-hamburger-toggle" aria-label="Menu">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+
+        <div class="header-brand">
+          <!-- Official Land Transportation Office Seal -->
+          <div class="lto-logo-wrapper">
+            <img
+              src="img/lto-logo.png"
+              alt="Land Transportation Office Philippines Official Seal"
+              class="lto-logo-img"
+              width="48"
+              height="48"
+            />
+          </div>
+
+          <div class="header-text-group">
+            <div class="agency-republic">REPUBLIC OF THE PHILIPPINES</div>
+            <h1 class="agency-title">LAND TRANSPORTATION OFFICE</h1>
+            <p class="agency-system-name">Driver Violation Tracking &amp; Fine Payment System</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Nav Links (Matches DEALER, PRODUCT, PARTS & WEAR, ABOUT US, ENG ▾) -->
+      <nav class="top-nav-menu" aria-label="Quick Navigation">
+        <button type="button" class="top-nav-link" data-role-switch="admin">ADMINISTRATOR</button>
+        <button type="button" class="top-nav-link" data-role-switch="enforcer">ENFORCER TICKET</button>
+        <button type="button" class="top-nav-link" data-role-switch="driver">DRIVER INQUIRY</button>
+        <a href="#main-content" class="top-nav-link">LEDGER</a>
+        
+        <!-- User Session Indicator / Login Trigger -->
+        <div class="header-session-group" id="header-user-session">
+          <a href="login.html" class="btn-header-auth" id="btn-header-auth-trigger" title="Sign In to Portal">
+            <span class="auth-icon">🔑</span>
+            <span class="auth-text">LOGIN</span>
+          </a>
+        </div>
+
+        <div class="top-nav-locale">
+          <span>PHILIPPINES</span>
+          <span class="chevron">▾</span>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Featured Motorcycle Hero Showcase (Inspired by Yamaha Aerox Layout) -->
+  <section class="hero-showcase" aria-label="LTO Enforcement Vehicle & System Showcase">
+    <!-- Faint 2026 Background Watermark -->
+    <div class="hero-watermark-bg" aria-hidden="true">2026</div>
+
+    <div class="hero-content-grid">
+      <!-- Left Hero Column: Motorcycle Asset & Carousel Arrows -->
+      <div class="hero-bike-col">
+        <button type="button" class="carousel-arrow prev-arrow" aria-label="Previous view">‹</button>
+        <div class="hero-bike-stage">
+          <img
+            src="img/Ito-patrol-moto.jpg X.jpg"
+            alt="LTO Highway Patrol Enforcement Motorcycle"
+            class="hero-bike-image"
+          />
+          <div class="hero-bike-glow"></div>
+          <div class="hero-bike-caption">*Philippine Law Enforcement Sector 01 &middot; Active Highway Patrol</div>
+        </div>
+        <button type="button" class="carousel-arrow next-arrow" aria-label="Next view">›</button>
+      </div>
+
+      <!-- Right Hero Column: Title, Active Fine Stats & Call To Action -->
+      <div class="hero-info-col">
+        <span class="hero-kicker">LTO ROAD SAFETY &amp; HIGHWAY PATROL</span>
+        <h2 class="hero-headline">
+          VIOLATION TRACKING &amp;<br />
+          FINE SETTLEMENT
+        </h2>
+
+        <div class="hero-price-card">
+          <span class="hero-price-label">SYSTEM OUTSTANDING FINES</span>
+          <div class="hero-price-amount" id="hero-outstanding-val">₱5,600.00</div>
+          <span class="hero-price-meta">3 Active Unpaid Citations Registered in Ledger</span>
+        </div>
+
+        <div class="hero-action-row">
+          <button type="button" class="btn-hero-primary" data-role-switch="driver">
+            INQUIRE &amp; PAY FINES
+          </button>
+          <button type="button" class="btn-hero-ghost" data-role-switch="enforcer">
+            ISSUE CITATION
+          </button>
+          <a href="login.html" class="btn-hero-auth" id="hero-auth-trigger" title="Open Portal Login">
+            LOGIN
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Category Tabs (Matching "+ TOP FEATURES", "+ GALLERY", "+ SPECS", "+ ACCESSORIES") -->
+    <div class="hero-category-nav" id="services" role="tablist" aria-label="Featured Capabilities">
+      <button type="button" class="hero-cat-btn" data-role-switch="admin">
+        <span class="plus">+</span> CITATIONS LEDGER
+      </button>
+      <button type="button" class="hero-cat-btn" data-role-switch="enforcer">
+        <span class="plus">+</span> ISSUE VIOLATION
+      </button>
+      <button type="button" class="hero-cat-btn" data-role-switch="driver">
+        <span class="plus">+</span> DRIVER BALANCE &amp; PAY
+      </button>
+      <button type="button" class="hero-cat-btn" data-role-switch="admin">
+        <span class="plus">+</span> AUDIT &amp; CLEARANCE
+      </button>
+    </div>
+
+    <!-- Bottom Carousel Sector Indicator (Matching "< Aerox 155 VVA ... NMax Connected >") -->
+    <div class="hero-carousel-footer">
+      <button type="button" class="sector-nav-link" data-role-switch="enforcer">‹ Central NCR Enforcement Sector</button>
+      <div class="carousel-dots" aria-hidden="true">
+        <span class="dot active"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+      <button type="button" class="sector-nav-link" data-role-switch="driver">Metro Manila Highway Division ›</button>
+    </div>
+  </section>
+
+  <!-- Role Switcher Navigation Container (Mounted by RoleSwitchView) -->
+  <section id="role-switch-container" aria-label="Role Switcher Navigation"></section>
+
+  <!-- Access Control Alert Notification Container -->
+  <div id="portal-access-alert-container" class="access-alert-wrap" aria-live="assertive"></div>
+
+  <!-- Main Application Content Area -->
+  <main id="main-content" class="main-layout" role="main">
+
+    <section class="portal-card" aria-labelledby="portals-showcase-title">
+      <div class="card-header-group">
+        <span class="card-kicker">OFFICIAL SYSTEM PANELS</span>
+        <h2 id="portals-showcase-title" class="card-title">LTO ROLE-BASED DASHBOARDS</h2>
+        <p class="card-subtitle">
+          Select an authorized terminal below or sign in through the login page to access your assigned dashboard.
+        </p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-top: 1.5rem;">
+        <!-- Card 1: Admin -->
+        <div style="background: rgba(12, 26, 30, 0.75); border: 1px solid var(--border-cyan); border-radius: var(--radius-sm); padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem;">
+          <div>
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🛡️</div>
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: #ffffff; margin-bottom: 0.35rem;">ADMINISTRATOR DASHBOARD</h3>
+            <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+              Centralized master citation records, audit trails, clearance verification, and administrative fine overrides.
+            </p>
+          </div>
+          <button type="button" class="btn-auth-submit" data-role-switch="admin" style="width: 100%; justify-content: center;">
+            <span>OPEN ADMIN DASHBOARD</span>
+            <span class="btn-icon">→</span>
+          </button>
+        </div>
+
+        <!-- Card 2: Officer -->
+        <div style="background: rgba(12, 26, 30, 0.75); border: 1px solid var(--border-cyan); border-radius: var(--radius-sm); padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem;">
+          <div>
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: #ffffff; margin-bottom: 0.35rem;">TRAFFIC OFFICER DASHBOARD</h3>
+            <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+              Field traffic citation issuance, dynamic statutory penalty calculation, violator driver tracking, and patrol sector logs.
+            </p>
+          </div>
+          <button type="button" class="btn-auth-submit" data-role-switch="enforcer" style="width: 100%; justify-content: center;">
+            <span>OPEN OFFICER DASHBOARD</span>
+            <span class="btn-icon">→</span>
+          </button>
+        </div>
+
+        <!-- Card 3: Driver -->
+        <div style="background: rgba(12, 26, 30, 0.75); border: 1px solid var(--border-cyan); border-radius: var(--radius-sm); padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem;">
+          <div>
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🚗</div>
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: #ffffff; margin-bottom: 0.35rem;">REGISTERED DRIVER DASHBOARD</h3>
+            <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+              Driver license citation lookup, active balance inquiry, fine settlement with cash tender calculator, and official digital receipt voucher.
+            </p>
+          </div>
+          <button type="button" class="btn-auth-submit" data-role-switch="driver" style="width: 100%; justify-content: center;">
+            <span>OPEN DRIVER DASHBOARD</span>
+            <span class="btn-icon">→</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal Container for User Authentication & Registration (Mounted by AuthView) -->
+  <div id="auth-modal-container" aria-live="assertive"></div>
+
+  <!-- Modal Container for Admin Editing a Citation Record (Mounted by AdminEditModalView) -->
+  <div id="admin-edit-modal-container" aria-live="assertive"></div>
+
+  <!-- Modal Container for Official Payment Receipt (Mounted by ReceiptView) -->
+  <div id="receipt-modal-container" aria-live="assertive"></div>
+
+  <!-- Government Footer (Dark Automotive Finish) -->
+  <footer class="lto-footer" id="about" role="contentinfo">
+    <div class="footer-container">
+      <div class="footer-col">
+        <h3 class="footer-heading">LAND TRANSPORTATION OFFICE (LTO) – PHILIPPINES</h3>
+        <p class="footer-text">
+          East Avenue, Diliman, Quezon City, Metro Manila, Philippines.<br />
+          Driver Violation Tracking and Fine Payment System – Academic Prototype.
+        </p>
+      </div>
+
+      <div class="footer-col">
+        <h4 class="footer-subheading">BSIT Coursework Team Ownership</h4>
+        <ul class="footer-team-list">
+          <li><strong>Member 1:</strong> Enforcer Module &middot; Form &amp; Citations</li>
+          <li><strong>Member 2:</strong> Admin Module &middot; Violation Management &amp; Audit</li>
+          <li><strong>Member 3:</strong> Driver Module &middot; Balance Inquiries &amp; Payment</li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-disclaimer" id="contact">
+        <h4 class="footer-subheading">System Architecture</h4>
+        <p class="footer-text">
+          Vanilla JavaScript ES Modules &middot; Pure Model-View-Controller (MVC) Pattern &middot; Client-Side LocalStorage Persistence &middot; Zero Backend Dependencies.
+        </p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Academic Class Project &middot; For Educational Evaluation Only.</p>
+    </div>
+  </footer>
+
+  <!-- Vanilla ES Module Controller Entrypoint -->
+  <script type="module" src="js/controller.js"></script>
+</body>
+</html>
