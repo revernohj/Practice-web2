@@ -13,6 +13,24 @@ export default class ViolationListView extends View {
     super('#violation-list-container');
   }
 
+  render(data) {
+    const activeElement = document.activeElement;
+    const isSearchFocused = activeElement?.id === 'admin-search-input';
+    const selectionStart = isSearchFocused ? activeElement.selectionStart : null;
+    const selectionEnd = isSearchFocused ? activeElement.selectionEnd : null;
+    const selectionDirection = isSearchFocused ? activeElement.selectionDirection : null;
+
+    super.render(data);
+
+    if (isSearchFocused) {
+      const searchInput = this._parentElement?.querySelector('#admin-search-input');
+      searchInput?.focus({ preventScroll: true });
+      if (searchInput && selectionStart !== null && selectionEnd !== null) {
+        searchInput.setSelectionRange(selectionStart, selectionEnd, selectionDirection || 'none');
+      }
+    }
+  }
+
   addHandlerSelection(handler) {
     if (!this._parentElement) return;
     this._parentElement.addEventListener('change', (e) => {

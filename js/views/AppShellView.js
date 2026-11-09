@@ -135,7 +135,7 @@ export default class AppShellView extends View {
     }
   }
 
-  addHandlerGlobalUi({ onRoleSwitch, onLogin, onHamburger }) {
+  addHandlerGlobalUi({ onRoleSwitch, onLogin }) {
     document.querySelector('#rail-auth-btn')?.addEventListener('click', event => {
       event.preventDefault();
       onLogin();
@@ -149,10 +149,6 @@ export default class AppShellView extends View {
       if (!trigger) return;
       event.preventDefault();
       onRoleSwitch(trigger.dataset.roleSwitch);
-    });
-    document.querySelector('#btn-hamburger-toggle')?.addEventListener('click', () => {
-      document.querySelector('.top-nav-menu')?.classList.toggle('nav-open');
-      onHamburger?.();
     });
   }
 }

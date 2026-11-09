@@ -66,9 +66,6 @@ body.dark-automotive-theme::before { content: ""; position: fixed; inset: 0; bac
 .header-container { max-width: 1240px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; }
 
 .header-left { display: flex; align-items: center; gap: 1.25rem; }
-.btn-hamburger { background: transparent; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 6px; color: #ffffff; }
-
-.hamburger-bar { width: 20px; height: 2px; background-color: #ffffff; border-radius: 2px; transition: transform 0.2s ease, opacity 0.2s ease; }
 .header-brand { display: flex; align-items: center; gap: 0.875rem; }
 
 .lto-logo-wrapper { width: 46px; height: 46px; border-radius: 50%; background-color: #ffffff; padding: 2px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 14px rgba(255, 255, 255, 0.2); transition: transform 0.2s ease; }
@@ -582,9 +579,9 @@ body.dark-automotive-theme::before { content: ""; position: fixed; inset: 0; bac
 
 @media (max-width: 768px) {
   .lto-header { padding: 0.75rem 1rem; }
-  .top-nav-menu { display: none; position: absolute; top: 100%; left: 0; right: 0; background: linear-gradient(135deg, rgba(182, 220, 244, 0.22), rgba(78, 145, 188, 0.08)),
-      rgba(35, 91, 127, 0.94); border-bottom: 1px solid rgba(255, 255, 255, 0.38); padding: 1rem; flex-direction: column; align-items: flex-start; gap: 1rem; box-shadow: 0 16px 30px rgba(8, 38, 58, 0.34); backdrop-filter: blur(22px) saturate(135%); -webkit-backdrop-filter: blur(22px) saturate(135%); }
-  .top-nav-menu.nav-open { display: flex; }
+  .header-container { flex-wrap: wrap; justify-content: center; }
+  .header-left { justify-content: center; }
+  .top-nav-menu { display: flex; position: static; width: 100%; justify-content: center; flex-wrap: wrap; gap: 0.75rem 1rem; padding: 0.5rem 0 0; background: transparent; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
   .header-session-group, .btn-header-auth, .user-session-pill { width: 100%; }
   .btn-header-auth { min-width: 0; height: 44px; justify-content: flex-start; }
   .user-session-pill { flex-wrap: wrap; }
@@ -909,9 +906,6 @@ body.dark-automotive-theme { background: radial-gradient(circle at 12% 18%, rgba
     rgba(35, 91, 127, 0.58); border-bottom: 1px solid rgba(255, 255, 255, 0.38); border-top: 0; box-shadow: 0 14px 34px rgba(8, 38, 58, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.38); backdrop-filter: blur(24px) saturate(135%); -webkit-backdrop-filter: blur(24px) saturate(135%); }
 .lto-header .header-container { min-height: 62px; }
-
-.lto-header .btn-hamburger { width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.28); background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28); }
-.lto-header .hamburger-bar { width: 17px; background: rgba(255, 255, 255, 0.92); }
 
 .lto-header .lto-logo-wrapper { box-shadow: 0 7px 16px rgba(8, 38, 58, 0.24),
     0 0 0 2px rgba(255, 255, 255, 0.42); border: 1px solid rgba(255, 255, 255, 0.52); }
@@ -1437,6 +1431,40 @@ body.dark-automotive-theme[data-page="login"]::before, body.dark-automotive-them
 #driver-view-section .data-table th:last-child, #driver-view-section .data-table td:last-child { min-width: 120px; white-space: nowrap; }
 
 #driver-view-section .data-table td:last-child .btn { display: inline-flex; margin: 0 0.15rem; }
+
+#admin-view-section .table-responsive { overflow-x: auto; }
+#admin-view-section .table-responsive .data-table { min-width: 1120px; }
+#admin-view-section .data-table th:last-child,
+#admin-view-section .data-table td:last-child {
+  min-width: 190px;
+  white-space: nowrap;
+}
+#admin-view-section .data-table td:last-child .action-btn-group { flex-wrap: nowrap; }
+#admin-view-section .data-table td:last-child .btn-table {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid rgba(190, 225, 241, 0.32);
+  border-radius: 6px;
+  background: rgba(165, 208, 230, 0.12);
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+#admin-view-section .data-table td:last-child .btn-action-edit:hover {
+  background: rgba(34, 211, 238, 0.2);
+  border-color: rgba(34, 211, 238, 0.7);
+}
+#admin-view-section .data-table td:last-child .btn-action-delete {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(239, 68, 68, 0.12);
+}
+#admin-view-section .data-table td:last-child .btn-action-delete:hover {
+  background: rgba(239, 68, 68, 0.24);
+  border-color: rgba(248, 113, 113, 0.75);
+}
 
 @media (max-width: 768px) {
   #driver-view-section .history-section { padding: 0.75rem; }
