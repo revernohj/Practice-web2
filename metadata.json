@@ -1,6 +1,0 @@
-{
-  "name": "LTO Philippines – Driver Violation Tracking and Fine Payment System",
-  "description": "LTO Driver Violation Tracking and Fine Payment Management System academic prototype for class project.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

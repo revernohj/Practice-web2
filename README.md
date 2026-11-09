@@ -12,7 +12,7 @@ Official Land Transportation Office (LTO) portal academic prototype with dedicat
 
 ## How to Run
 
-Open `index.html` directly in any web browser, or serve this folder using a local static HTTP server (e.g. `npx serve .` or `python -m http.server`).
+Run `npm install`, then `npm run dev` to start the Vite development server.
 
 After login, the system automatically switches to the dashboard assigned to the user's role:
 - **Administrator** → `index.html#admin`

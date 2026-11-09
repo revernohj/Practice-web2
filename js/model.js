@@ -304,7 +304,7 @@ export function validateLoginData(credentials = {}) {
 }
 
 /**
- * Validates user registration data for Driver, Enforcer, or Admin roles.
+ * Validates user registration data for Driver or Enforcer roles.
  * @param {Object} data
  * @returns {{ isValid: boolean, errors: string[] }}
  */
@@ -317,8 +317,8 @@ export function validateRegisterData(data = {}) {
   const role = (data.role || '').trim().toLowerCase();
 
   // 1. Role validation
-  if (!['driver', 'enforcer', 'admin'].includes(role)) {
-    errors.push('Valid user role (Driver, Enforcer, or Admin) must be selected.');
+  if (!['driver', 'enforcer'].includes(role)) {
+    errors.push('Registration is available only for Driver and Enforcer accounts.');
   }
 
   // 2. Full Name
@@ -381,13 +381,6 @@ export function validateRegisterData(data = {}) {
 
     if (!sector) {
       errors.push('Patrol Sector / Station Assignment is required.');
-    }
-  } else if (role === 'admin') {
-    const adminPasscode = (data.adminPasscode || '').trim();
-    if (!adminPasscode) {
-      errors.push('Official Administrator Verification Passcode is required.');
-    } else if (adminPasscode !== ADMIN_PASSCODE) {
-      errors.push('Invalid Administrator Verification Passcode.');
     }
   }
 
@@ -548,7 +541,7 @@ export function login(rawUsername, rawPassword, remember = true) {
 }
 
 /**
- * Registers a new user account for Driver, Enforcer, or Admin.
+ * Registers a new user account for Driver or Enforcer.
  * Automatically signs them in upon successful registration.
  * @param {Object} rawData
  * @returns {Object} Newly registered user account
@@ -578,9 +571,6 @@ export function register(rawData) {
   } else if (role === 'enforcer') {
     newUser.badgeNo = rawData.badgeNo.trim().toUpperCase();
     newUser.sector = rawData.sector.trim();
-  } else if (role === 'admin') {
-    newUser.title = rawData.title ? rawData.title.trim() : 'LTO Administrator';
-    newUser.email = rawData.email ? rawData.email.trim() : `${newUser.username}@lto.gov.ph`;
   }
 
   state.users.push(newUser);

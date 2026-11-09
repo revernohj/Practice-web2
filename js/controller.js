@@ -28,6 +28,7 @@ import UserSessionView from './views/UserSessionView.js';
 import LoginView from './views/LoginView.js';
 import AdminEditModalView from './views/AdminEditModalView.js';
 import ThemeView from './views/ThemeView.js';
+import AppShellView from './views/AppShellView.js';
 
 // Instantiate view singletons
 const roleSwitchView = new RoleSwitchView();
@@ -41,6 +42,7 @@ const userSessionView = new UserSessionView();
 const loginView = new LoginView();
 const adminEditModalView = new AdminEditModalView();
 new ThemeView();
+const appShellView = new AppShellView();
 
 
 // ==========================================
@@ -77,7 +79,8 @@ function formatPanelName(role) {
  */
 function getRoute() {
   const route = window.location.hash.replace(/^#/, '').split('?')[0].toLowerCase();
-  return ['login', 'admin', 'enforcer', 'driver'].includes(route) ? route : 'login';
+  if (!route || route === 'home') return 'home';
+  return ['login', 'admin', 'enforcer', 'driver'].includes(route) ? route : 'home';
 }
 
 /**
@@ -85,38 +88,14 @@ function getRoute() {
  * @param {string} message
  */
 function showAccessDenied(message) {
-  const alertContainer = document.querySelector('#portal-access-alert-container');
-  if (!alertContainer) return;
-
-  alertContainer.innerHTML = `
-    <div class="access-alert-banner alert-danger" role="alert">
-      <div class="alert-icon-col">⛔</div>
-      <div class="alert-text-col">
-        <strong class="alert-title">ACCESS RESTRICTED</strong>
-        <p class="alert-msg">${message}</p>
-      </div>
-      <button type="button" class="btn-dismiss-alert" id="btn-close-access-alert" aria-label="Dismiss alert">✕</button>
-    </div>
-  `;
-
-  const closeBtn = alertContainer.querySelector('#btn-close-access-alert');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', () => {
-      alertContainer.innerHTML = '';
-    });
-  }
-
-  alertContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  appShellView.showAccessDenied(message);
 }
 
 /**
  * Clears the access alert banner.
  */
 function clearAccessAlert() {
-  const alertContainer = document.querySelector('#portal-access-alert-container');
-  if (alertContainer) {
-    alertContainer.innerHTML = '';
-  }
+  appShellView.clearAccessDenied();
 }
 
 /**
@@ -186,28 +165,7 @@ function controlSwitchRole(newRole) {
  * @param {'admin'|'enforcer'|'driver'|null} role
  */
 function updateRoleSectionsVisibility(role) {
-  const loginSection = document.querySelector('#login-view-section');
-  const adminSection = document.querySelector('#admin-view-section');
-  const enforcerSection = document.querySelector('#enforcer-view-section');
-  const driverSection = document.querySelector('#driver-view-section');
-
-  const isAuthenticated = Boolean(model.state.currentUser && role);
-
-  // Show login section ONLY when unauthenticated
-  if (loginSection) {
-    loginSection.classList.toggle('hidden', isAuthenticated);
-  }
-
-  // Role sections are only visible when authenticated AND matching their role
-  if (adminSection) {
-    adminSection.classList.toggle('hidden', !isAuthenticated || role !== 'admin');
-  }
-  if (enforcerSection) {
-    enforcerSection.classList.toggle('hidden', !isAuthenticated || role !== 'enforcer');
-  }
-  if (driverSection) {
-    driverSection.classList.toggle('hidden', !isAuthenticated || role !== 'driver');
-  }
+  appShellView.syncRoleVisibility(model.state.currentUser && role ? role : null);
 }
 
 /**
@@ -236,58 +194,13 @@ function renderActiveRoleViews() {
  * Synchronizes the hero showcase outstanding fine total and active nav indicators.
  */
 function updateHeroMetrics() {
-  const heroVal = document.querySelector('#hero-outstanding-val');
-  if (heroVal) {
-    const summary = model.getSummary(model.state.violations);
-    heroVal.textContent = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(summary.totalUnpaidFines);
-  }
+  appShellView.updateHeroMetrics(model.getSummary(model.state.violations));
 }
 
 function executeDashboardRailAction(action) {
   const route = getRoute();
-
-  const focusAndScroll = (selector) => {
-    const element = document.querySelector(selector);
-    if (!element) return;
-    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    if (typeof element.focus === 'function') element.focus({ preventScroll: true });
-  };
-
-  if (route === 'admin') {
-    if (action === 'search') focusAndScroll('#admin-search-input');
-    if (action === 'ledger') focusAndScroll('#mgmt-heading');
-    if (action === 'pending') document.querySelector('.filter-pill[data-status="pending_review"]')?.click();
-    if (action === 'export') document.querySelector('#btn-export-selected:not(:disabled)')?.click();
-    return;
-  }
-
-  if (route === 'enforcer') {
-    if (action === 'issue') focusAndScroll('#input-license-no');
-    if (action === 'presets') focusAndScroll('.offense-preset-row');
-    if (action === 'demerit') focusAndScroll('#input-license-no');
-    if (action === 'reset') document.querySelector('#btn-reset-form')?.click();
-    return;
-  }
-
-  if (route === 'driver') {
-    if (action === 'search') focusAndScroll('#input-driver-search-license');
-    if (action === 'balance') focusAndScroll('.balance-highlight-box');
-    if (action === 'pay') {
-      const payButton = document.querySelector('.btn-pay-violation:not([disabled])');
-      if (payButton) {
-        payButton.click();
-      } else {
-        focusAndScroll('.history-section');
-      }
-    }
-    if (action === 'history') focusAndScroll('.history-section');
-    if (action === 'clearance') {
-      const printButton = document.querySelector('#btn-print-clearance');
-      if (printButton) printButton.click();
-      else focusAndScroll('.clearance-status-row');
-    }
-    return;
-  }
+  appShellView.executeRailAction(route, action);
+  if (['admin', 'enforcer', 'driver'].includes(route)) return;
 
   if (action === 'login') showLoginPage('', 'driver');
   if (action === 'inquiry') controlSwitchRole('driver');
@@ -299,23 +212,7 @@ function executeDashboardRailAction(action) {
  * Updates top navigation and left vertical rail highlights according to active user role.
  */
 function updateNavIndicators() {
-  const currentUser = model.state.currentUser;
-  const activeRole = currentUser ? currentUser.role : null;
-
-  // Sync role triggers across top-nav, left-rail, and hero buttons
-  const roleTriggers = document.querySelectorAll('[data-role-switch]');
-  roleTriggers.forEach(el => {
-    const triggerRole = el.dataset.roleSwitch;
-    const isTarget = activeRole && triggerRole === activeRole;
-    el.classList.toggle('active', Boolean(isTarget));
-    el.classList.toggle('restricted-nav-item', Boolean(currentUser && !isTarget));
-  });
-
-  // Rail authentication highlight button
-  const railAuthBtn = document.querySelector('#rail-auth-btn');
-  if (railAuthBtn) {
-    railAuthBtn.classList.toggle('active', !currentUser);
-  }
+  appShellView.updateNavIndicators(model.state.currentUser);
 }
 
 
@@ -670,11 +567,7 @@ function controlPrintClearance() {
 function controlSelectPayment(violationId) {
   model.selectViolationForPayment(violationId);
   renderDriverViews();
-
-  const paymentSection = document.querySelector('#payment-portal-container');
-  if (paymentSection) {
-    paymentSection.scrollIntoView({ behavior: 'smooth' });
-  }
+  appShellView.scrollPayment();
 }
 
 /**
@@ -840,7 +733,7 @@ function controlForgotPassword(username) {
 }
 
 /**
- * Handles new user registration for Driver, Enforcer, or Admin.
+ * Handles new user registration for Driver or Enforcer.
  * @param {Object} payload
  */
 function controlRegister(payload) {
@@ -904,19 +797,9 @@ function init() {
     const route = getRoute();
     const hashParts = window.location.hash.replace(/^#/, '').split('?');
     const params = new URLSearchParams(hashParts[1] || '');
-    const loginSection = document.querySelector('#login-view-section');
-    const adminSection = document.querySelector('#admin-view-section');
-    const enforcerSection = document.querySelector('#enforcer-view-section');
-    const driverSection = document.querySelector('#driver-view-section');
-    const homeSections = document.querySelectorAll('[data-home-section]');
-
-    homeSections.forEach(section => section.classList.toggle('hidden', route !== 'home'));
+    appShellView.syncRouteSections(route);
     roleSwitchView.renderRail(route, model.state.currentUser);
     roleSwitchView.syncHeader(route, model.state.currentUser);
-    if (loginSection) loginSection.classList.toggle('hidden', route !== 'login');
-    if (adminSection) adminSection.classList.toggle('hidden', route !== 'admin');
-    if (enforcerSection) enforcerSection.classList.toggle('hidden', route !== 'enforcer');
-    if (driverSection) driverSection.classList.toggle('hidden', route !== 'driver');
 
     renderUserSession();
     clearAccessAlert();
@@ -926,6 +809,7 @@ function init() {
         window.location.replace(getDashboardUrl(model.state.currentUser.role));
         return;
       }
+      appShellView.setPageState(null, null);
       loginView.addHandlerLogin(controlLogin);
       loginView.addHandlerRegister(controlRegister);
       loginView.addHandlerForgotPassword(controlForgotPassword);
@@ -936,7 +820,7 @@ function init() {
         role: params.get('role') || 'driver',
         initialNotice: params.get('notice') || ''
       });
-      document.body.dataset.page = 'login';
+      appShellView.setPageState('login');
       return;
     }
 
@@ -953,7 +837,7 @@ function init() {
       }
 
       model.setRole(route);
-      document.body.dataset.dashboard = route;
+      appShellView.setPageState(null, route);
 
       if (route === 'admin') {
         adminEditModalView.addHandlerSave(controlSaveAdminEdit);
@@ -999,8 +883,7 @@ function init() {
       return;
     }
 
-    delete document.body.dataset.dashboard;
-    delete document.body.dataset.page;
+    appShellView.setPageState('home', null);
     if (model.state.currentUser && model.state.role) {
       roleSwitchView.render({ user: model.state.currentUser, role: model.state.role });
     } else {
@@ -1013,85 +896,28 @@ function init() {
   window.addEventListener('hashchange', routePortal);
   routePortal();
 
-  // Left action rail buttons
-  const railAuthBtn = document.querySelector('#rail-auth-btn');
-  if (railAuthBtn) {
-    railAuthBtn.addEventListener('click', (e) => {
-      e.preventDefault();
+  appShellView.setCurrentDate();
+  appShellView.addHandlerGlobalUi({
+    onLogin: () => {
+      if (!model.state.currentUser) showLoginPage();
+      else window.location.assign(getDashboardUrl(model.state.currentUser.role));
+    },
+    onRoleSwitch: targetRole => {
+      if (!targetRole) return;
       if (!model.state.currentUser) {
-        showLoginPage();
-      } else {
-        window.location.assign(getDashboardUrl(model.state.currentUser.role));
+        showLoginPage(`Please sign in to access the ${formatPanelName(targetRole)}.`, targetRole);
+        return;
       }
-    });
-  }
-
-  const heroAuthBtn = document.querySelector('#hero-auth-trigger');
-  if (heroAuthBtn) {
-    heroAuthBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (!model.state.currentUser) {
-        showLoginPage();
-      } else {
-        window.location.assign(getDashboardUrl(model.state.currentUser.role));
+      if (model.state.currentUser.role !== targetRole) {
+        showAccessDenied(
+          `Access Denied: As a ${formatRoleName(model.state.currentUser.role)}, you can only access the ${formatPanelName(model.state.currentUser.role)}. You do not have permission to view the ${formatPanelName(targetRole)}.`
+        );
+        return;
       }
-    });
-  }
-
-  // Display official date in header if element exists
-  const dateEl = document.querySelector('#portal-current-date');
-  if (dateEl) {
-    const now = new Date();
-    dateEl.textContent = now.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  }
-
-  // Global listener for dark automotive hero, top-nav, and rail role triggers
-  document.addEventListener('click', (e) => {
-    const trigger = e.target.closest('[data-role-switch]');
-    if (!trigger) return;
-
-    e.preventDefault();
-    const targetRole = trigger.dataset.roleSwitch;
-    if (!targetRole) return;
-
-    // A. Unauthenticated: route to login.html with intent
-    if (!model.state.currentUser) {
-      showLoginPage(`Please sign in to access the ${formatPanelName(targetRole)}.`, targetRole);
-      return;
+      window.location.assign(getDashboardUrl(targetRole));
     }
-
-    // B. Strict RBAC: only allow their assigned role
-    if (model.state.currentUser.role !== targetRole) {
-      showAccessDenied(
-        `Access Denied: As a ${formatRoleName(model.state.currentUser.role)}, you can only access the ${formatPanelName(model.state.currentUser.role)}. You do not have permission to view the ${formatPanelName(targetRole)}.`
-      );
-      return;
-    }
-
-    // C. Authorized: open dashboard
-    window.location.assign(getDashboardUrl(targetRole));
   });
-
-  // Mobile hamburger toggle for top navigation
-  const hamburgerBtn = document.querySelector('#btn-hamburger-toggle');
-  if (hamburgerBtn) {
-    hamburgerBtn.addEventListener('click', () => {
-      const topNav = document.querySelector('.top-nav-menu');
-      if (topNav) {
-        topNav.classList.toggle('nav-open');
-      }
-    });
-  }
 }
 
 // Kickstart the application once DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
-}
+appShellView.runWhenReady(init);

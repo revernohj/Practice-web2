@@ -12,7 +12,7 @@ export default class AuthView extends View {
   constructor() {
     super('#auth-modal-container');
     this._activeTab = 'login'; // 'login' | 'register'
-    this._selectedRole = 'driver'; // 'driver' | 'enforcer' | 'admin'
+    this._selectedRole = 'driver'; // 'driver' | 'enforcer'
   }
 
   /**
@@ -20,7 +20,7 @@ export default class AuthView extends View {
    */
   render(data) {
     if (data?.tab) this._activeTab = data.tab;
-    if (data?.role) this._selectedRole = data.role;
+    if (data?.role && ['driver', 'enforcer'].includes(data.role)) this._selectedRole = data.role;
     super.render(data);
   }
 
@@ -114,7 +114,7 @@ export default class AuthView extends View {
       const roleBtn = e.target.closest('[data-auth-role-select]');
       if (!roleBtn) return;
       const targetRole = roleBtn.dataset.authRoleSelect;
-      if (targetRole && ['driver', 'enforcer', 'admin'].includes(targetRole)) {
+      if (targetRole && ['driver', 'enforcer'].includes(targetRole)) {
         this._selectedRole = targetRole;
         handler(this._activeTab, targetRole);
       }
@@ -174,9 +174,6 @@ export default class AuthView extends View {
       } else if (this._selectedRole === 'enforcer') {
         payload.badgeNo = form.querySelector('#reg-badgeno')?.value || '';
         payload.sector = form.querySelector('#reg-sector')?.value || '';
-      } else if (this._selectedRole === 'admin') {
-        payload.adminPasscode = form.querySelector('#reg-adminpasscode')?.value || '';
-        payload.title = form.querySelector('#reg-admintitle')?.value || 'LTO System Administrator';
       }
 
       handler(payload);
@@ -300,7 +297,7 @@ export default class AuthView extends View {
 
         <div class="auth-bottom-switch">
           <span>Don't have an account yet?</span>
-          <button type="button" class="link-switch" data-auth-tab="register">Register as Driver, Enforcer, or Admin</button>
+          <button type="button" class="link-switch" data-auth-tab="register">Register as Driver or Enforcer</button>
         </div>
       </form>
     `;
@@ -332,14 +329,6 @@ export default class AuthView extends View {
             >
               <span class="picker-icon">📋</span>
               <span class="picker-name">Enforcer</span>
-            </button>
-            <button
-              type="button"
-              class="role-picker-btn ${role === 'admin' ? 'active' : ''}"
-              data-auth-role-select="admin"
-            >
-              <span class="picker-icon">🛡️</span>
-              <span class="picker-name">Administrator</span>
             </button>
           </div>
         </div>
@@ -516,44 +505,6 @@ export default class AuthView extends View {
                 required
               />
               <span class="auth-input-hint">Jurisdiction / patrol deployment sector</span>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    if (role === 'admin') {
-      return `
-        <div class="auth-role-section">
-          <div class="role-section-header">AGENCY AUTHORIZATION &amp; SECURITY</div>
-          <div class="auth-grid-2">
-            <div class="auth-form-group">
-              <label for="reg-adminpasscode" class="auth-label">
-                <span>Admin Authorization Passcode</span>
-                <span class="req">*</span>
-              </label>
-              <input
-                type="password"
-                id="reg-adminpasscode"
-                name="adminPasscode"
-                class="auth-input tabular-nums"
-                placeholder="Enter administrator passcode"
-                required
-              />
-            </div>
-
-            <div class="auth-form-group">
-              <label for="reg-admintitle" class="auth-label">
-                <span>Official Designation / Title</span>
-              </label>
-              <input
-                type="text"
-                id="reg-admintitle"
-                name="adminTitle"
-                class="auth-input"
-                placeholder="e.g., Central Records Officer"
-              />
-              <span class="auth-input-hint">Department role or division title</span>
             </div>
           </div>
         </div>

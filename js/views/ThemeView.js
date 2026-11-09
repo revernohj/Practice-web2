@@ -1,21 +1,18 @@
-import View from './View.js';
-
-export default class ThemeView extends View {
+export default class ThemeView {
   constructor() {
-    super('body');
     this.storageKey = 'lto-theme-mode';
     this.init();
   }
 
   init() {
-    if (!this._parentElement) return;
+    if (!document.body) return;
 
     const savedMode = localStorage.getItem(this.storageKey);
     const shouldUseNight = savedMode === 'night';
     const existingLayer = document.querySelector('#night-theme-layer');
 
     if (!existingLayer) {
-      this._parentElement.insertAdjacentHTML(
+      document.body.insertAdjacentHTML(
         'afterbegin',
         '<div id="night-theme-layer" class="night-theme-layer" aria-hidden="true"></div>'
       );
